@@ -4,8 +4,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -13,9 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +29,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen() {
-    // Estados para usuario y contraseña
     val username = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
 
@@ -50,46 +47,36 @@ fun LoginScreen() {
             modifier = Modifier.fillMaxWidth()
         ) {
             // Campo de texto para el nombre de usuario
-            BasicTextField(
+            OutlinedTextField(
                 value = username.value,
                 onValueChange = { username.value = it },
+                label = { Text("Username", color = Color.White) }, // Color del texto blanco
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                textStyle = TextStyle(fontSize = 18.sp, color = Color.Black),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .fillMaxWidth()
-                    ) {
-                        if (username.value.isEmpty()) Text("Username", color = Color.Gray)
-                        innerTextField()
-                    }
-                }
+                colors = androidx.compose.material3.TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.White,
+                    textColor = Color.White
+                )
             )
 
             // Espacio entre campos
             Spacer(modifier = Modifier.height(16.dp))
 
             // Campo de texto para la contraseña
-            BasicTextField(
+            OutlinedTextField(
                 value = password.value,
                 onValueChange = { password.value = it },
+                label = { Text("Password", color = Color.White) }, // Color del texto blanco
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                textStyle = TextStyle(fontSize = 18.sp, color = Color.Black),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .fillMaxWidth()
-                    ) {
-                        if (password.value.isEmpty()) Text("Password", color = Color.Gray)
-                        innerTextField()
-                    }
-                }
+                colors = androidx.compose.material3.TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.White,
+                    textColor = Color.White
+                )
             )
         }
 
@@ -97,8 +84,11 @@ fun LoginScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Botón de inicio de sesión
-        Button(onClick = { /* Acción de inicio de sesión */ }) {
-            Text(text = "Login")
+        Button(
+            onClick = { /* Acción de inicio de sesión */ },
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF666E6C)) // Color del botón
+        ) {
+            Text(text = "Login", color = Color.White) // Texto del botón en blanco
         }
     }
 }
@@ -108,5 +98,7 @@ fun LoginScreen() {
 fun PreviewLoginScreen() {
     LoginScreen()
 }
+
+
 
 
