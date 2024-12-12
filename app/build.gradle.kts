@@ -55,6 +55,11 @@ android {
 }
 
 dependencies {
+    implementation ("androidx.navigation:navigation-compose:2.5.0")
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
+
     // Compose BOM (Bill of Materials) para mantener la consistencia
     implementation(platform("androidx.compose:compose-bom:2023.09.01"))
     implementation("androidx.compose.material3:material3")
