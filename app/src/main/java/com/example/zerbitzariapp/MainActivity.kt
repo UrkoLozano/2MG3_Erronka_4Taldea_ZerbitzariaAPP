@@ -34,30 +34,34 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyApp()
+            val navController = rememberNavController() // Inicializamos NavHostController
+            MyApp(navController = navController) // Pasamos el NavController a la función App
         }
     }
+}
 
-    @Composable
-    fun MyApp() {
-        val navController = rememberNavController()
-
-        NavHost(
-            navController = navController,
-            startDestination = "login"
-        ) {
-            composable("login") { LoginScreen(navController) }
-            composable("home") { HomeScreen(navController) }
-            composable("mesas") { MesaScreen { navController.navigate("detalleMesa/$it") } }
-            composable("detalleMesa/{mesaId}") { backStackEntry ->
-                val mesaId = backStackEntry.arguments?.getString("mesaId")?.toInt() ?: 0
-                DetalleMesaScreen(mesaId)
-            }
-            composable("txat") { TxatScreen() } // Pantalla de Txat
-            composable("eskariak") { EskariakIkusiScreen() } // Pantalla de Eskariak Ikusi
+@Composable
+fun MyApp(navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = "login"
+    ) {
+        composable("login") { LoginScreen(navController) }
+        composable("home") { HomeScreen(navController) }
+        composable("mesas") { MesaScreen { mesaId -> navController.navigate("detalleMesa/$mesaId") } }
+        composable(
+            "detalleMesa/{mesaId}",
+            arguments = listOf(navArgument("mesaId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
+            ComandaScreen(mesaId = mesaId)
         }
+        composable("txat") { TxatScreen() }
+        composable("eskariak") { EskariakIkusiScreen() }
     }
+}
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun LoginScreen(navController: NavController) {
         val username = remember { mutableStateOf("") }
@@ -150,7 +154,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
+    //pantalla de chat
     @Composable
     fun HomeScreen(navController: NavController) {
         val primaryBackgroundColor = Color(0xFF345A7B)
@@ -200,7 +204,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
+    //pantalla para ver las mesas que hay
     @Composable
     fun MesaScreen(onMesaSelected: (Int) -> Unit) {
         val primaryBackgroundColor = Color(0xFF345A7B)
@@ -218,16 +222,14 @@ class MainActivity : ComponentActivity() {
                     .size(350.dp)
                     .padding(bottom = 32.dp)
             )
-            Text("Aukeratu Mahai Bat", color = Color.White, fontSize = 20.sp)
+            Text("Zein mahai da?", color = Color.White, fontSize = 20.sp)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Generamos las 3 filas de 4 mesas
             for (row in 0 until 3) {
                 Row(
                     horizontalArrangement = Arrangement.SpaceAround,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Generamos las 4 mesas por fila
                     for (mesaId in (row * 4 + 1)..(row * 4 + 4)) {
                         Box(
                             modifier = Modifier
@@ -240,7 +242,69 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp)) // Espacio entre filas
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
+    @Composable
+    fun ComandaScreen(mesaId: Int) {
+        val primaryBackgroundColor = Color(0xFF345A7B)
+        val bebidas = listOf("Coca-Cola", "Kas Naranja", "Kas Limón", "Agua", "Agua con gas", "Cerveza", "Vino Blanco", "Vino Tinto")
+
+        val bebidaSeleccionada = remember { mutableStateListOf<String>() }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(primaryBackgroundColor)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text(
+                text = "Mahai zenbakia: $mesaId",
+                color = Color.White,
+                fontSize = 24.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                bebidas.forEach { bebida ->
+                    Button(
+                        onClick = {
+                            bebidaSeleccionada.add(bebida)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                    ) {
+                        Text(text = bebida, color = Color.White, fontSize = 16.sp)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Bebida hautatuak:",
+                color = Color.White,
+                fontSize = 20.sp
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                items(bebidaSeleccionada) { bebida ->
+                    Text(text = bebida, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+                }
             }
         }
     }
@@ -248,6 +312,7 @@ class MainActivity : ComponentActivity() {
 
 
     // Pantalla de Txat
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun TxatScreen() {
         val primaryBackgroundColor = Color(0xFF345A7B)
@@ -352,33 +417,39 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Preview(showBackground = true, showSystemUi = true)
+    @Preview(showBackground = true )
     @Composable
     fun PreviewLoginScreen() {
         LoginScreen(navController = rememberNavController())
     }
 
-    @Preview(showBackground = true, showSystemUi = true)
+    @Preview(showBackground = true)
     @Composable
     fun PreviewHomeScreen() {
         HomeScreen(navController = rememberNavController())
     }
 
-    @Preview(showBackground = true, showSystemUi = true)
+    @Preview(showBackground = true)
     @Composable
     fun PreviewMesaScreen() {
         MesaScreen(onMesaSelected = {})
     }
 
-    @Preview(showBackground = true, showSystemUi = true)
+    @Composable
+    @Preview
+    fun PreviewComandaScreen() {
+        ComandaScreen(mesaId = 1)
+    }
+
+    @Preview(showBackground = true)
     @Composable
     fun PreviewTxatScreen() {
         TxatScreen()
     }
 
-    @Preview(showBackground = true, showSystemUi = true)
+    @Preview(showBackground = true)
     @Composable
     fun PreviewEskariakIkusiScreen() {
         EskariakIkusiScreen()
     }
-}
+
