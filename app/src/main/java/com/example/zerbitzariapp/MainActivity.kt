@@ -245,21 +245,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun DetalleMesaScreen(mesaId: Int) {
-        val primaryBackgroundColor = Color(0xFF345A7B)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(primaryBackgroundColor)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Detalles de la Mesa $mesaId", color = Color.White, fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(16.dp))
-            // Aquí podrías agregar más contenido relacionado con la mesa
-        }
-    }
+
 
     // Pantalla de Txat
     @Composable
@@ -382,12 +368,6 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun PreviewMesaScreen() {
         MesaScreen(onMesaSelected = {})
-    }
-
-    @Preview(showBackground = true, showSystemUi = true)
-    @Composable
-    fun PreviewDetalleMesaScreen() {
-        DetalleMesaScreen(mesaId = 1)
     }
 
     @Preview(showBackground = true, showSystemUi = true)
