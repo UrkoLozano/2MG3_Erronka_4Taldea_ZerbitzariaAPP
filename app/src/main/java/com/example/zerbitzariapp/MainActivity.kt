@@ -5,30 +5,54 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.zerbitzariapp.R
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.text.input.TextFieldValue
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,22 +68,35 @@ class MainActivity : ComponentActivity() {
 fun MyApp(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = "login" // Rutas disponibles en la aplicación
     ) {
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
-        composable("mesas") { MesaScreen { mesaId -> navController.navigate("detalleMesa/$mesaId") } }
+
+        // Navegación a la pantalla de mesas, pasando el id de la mesa
+        composable("mesas") {
+            MesaScreen { mesaId ->
+                navController.navigate("detalleMesa/$mesaId")
+            }
+        }
+
+        // Navegación al detalle de una mesa, pasando el id de la mesa en la URL
         composable(
             "detalleMesa/{mesaId}",
             arguments = listOf(navArgument("mesaId") { type = NavType.IntType })
         ) { backStackEntry ->
             val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
-            ComandaScreen(mesaId = mesaId)
+            BebidaScreen(mesaId = mesaId)
         }
+
+        // Navegación al chat
         composable("txat") { TxatScreen() }
+
+        // Navegación a la pantalla de ver pedidos
         composable("eskariak") { EskariakIkusiScreen() }
     }
 }
+
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -101,10 +138,10 @@ fun MyApp(navController: NavHostController) {
                         .fillMaxWidth()
                         .padding(8.dp),
                     textStyle = LocalTextStyle.current.copy(color = Color.White),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                    colors = OutlinedTextFieldDefaults.colors(
+                        cursorColor = Color.White,
                         focusedBorderColor = textFieldBorderColor,
                         unfocusedBorderColor = textFieldBorderColor,
-                        cursorColor = Color.White
                     )
                 )
 
@@ -118,10 +155,10 @@ fun MyApp(navController: NavHostController) {
                         .fillMaxWidth()
                         .padding(8.dp),
                     textStyle = LocalTextStyle.current.copy(color = Color.White),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                    colors = OutlinedTextFieldDefaults.colors(
+                        cursorColor = Color.White,
                         focusedBorderColor = textFieldBorderColor,
                         unfocusedBorderColor = textFieldBorderColor,
-                        cursorColor = Color.White
                     ),
                     visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
@@ -247,71 +284,240 @@ fun MyApp(navController: NavHostController) {
         }
     }
 
-    @Composable
-    fun ComandaScreen(mesaId: Int) {
-        val primaryBackgroundColor = Color(0xFF345A7B)
-        val bebidas = listOf("Coca-Cola", "Kas Naranja", "Kas Limón", "Agua", "Agua con gas", "Cerveza", "Vino Blanco", "Vino Tinto")
+@Composable
+fun BebidaScreen(mesaId: Int) {
+    val primaryBackgroundColor = Color(0xFF345A7B)
+    val bebidas = listOf("Coca-Cola", "Kas Naranja", "Kas Limón", "Agua", "Agua con gas", "Cerveza", "Vino Blanco", "Vino Tinto")
 
-        val bebidaSeleccionada = remember { mutableStateListOf<String>() }
+    val bebidaSeleccionada = remember { mutableStateListOf<String>() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(primaryBackgroundColor)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            text = "Mahai zenbakia: $mesaId",
+            color = Color.White,
+            fontSize = 24.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(primaryBackgroundColor)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Mahai zenbakia: $mesaId",
-                color = Color.White,
-                fontSize = 24.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                bebidas.forEach { bebida ->
-                    Button(
-                        onClick = {
-                            bebidaSeleccionada.add(bebida)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                    ) {
-                        Text(text = bebida, color = Color.White, fontSize = 16.sp)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Bebida hautatuak:",
-                color = Color.White,
-                fontSize = 20.sp
-            )
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-                items(bebidaSeleccionada) { bebida ->
-                    Text(text = bebida, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+            bebidas.forEach { bebida ->
+                Button(
+                    onClick = {
+                        bebidaSeleccionada.add(bebida)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                ) {
+                    Text(text = bebida, color = Color.White, fontSize = 16.sp)
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Hautatutako Edariak:",
+            color = Color.White,
+            fontSize = 20.sp
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            items(bebidaSeleccionada) { bebida ->
+                Text(text = bebida, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+            }
+        }
     }
+}
+
+@Composable
+fun PrimerosScreen(mesaId: Int) {
+    val primaryBackgroundColor = Color(0xFF345A7B)
+    val primeros = listOf("Entsalada", "Arroza", "Zopa", "Makarroiak", "Patatak")
+
+    val lehenHautatuak = remember { mutableStateListOf<String>() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(primaryBackgroundColor)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            text = "Mahai zenbakia: $mesaId",
+            color = Color.White,
+            fontSize = 24.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            primeros.forEach { lehenPlatera ->
+                Button(
+                    onClick = {
+                        lehenHautatuak.add(lehenPlatera)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                ) {
+                    Text(text = lehenPlatera, color = Color.White, fontSize = 16.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Hautatutako lehen platerak:",
+            color = Color.White,
+            fontSize = 20.sp
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            items(lehenHautatuak) { lehenPlatera ->
+                Text(text = lehenPlatera, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun SegundosScreen(mesaId: Int) {
+    val primaryBackgroundColor = Color(0xFF345A7B)
+    val segundos = listOf("Arraina", "Oilaskoa", "Txuleta", "Lekaleak", "Barazkiak")
+
+    val bigarrenHautatuak = remember { mutableStateListOf<String>() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(primaryBackgroundColor)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            text = "Mahai zenbakia: $mesaId",
+            color = Color.White,
+            fontSize = 24.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            segundos.forEach { bigarrenPlatera ->
+                Button(
+                    onClick = {
+                        bigarrenHautatuak.add(bigarrenPlatera)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                ) {
+                    Text(text = bigarrenPlatera, color = Color.White, fontSize = 16.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Hautatutako bigarren platerak:",
+            color = Color.White,
+            fontSize = 20.sp
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            items(bigarrenHautatuak) { bigarrenPlatera ->
+                Text(text = bigarrenPlatera, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
+    val primaryBackgroundColor = Color(0xFF345A7B)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(primaryBackgroundColor)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            text = "Comanda de la Mesa $mesaId",
+            color = Color.White,
+            fontSize = 24.sp
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            items(productos) { producto ->
+                Text(
+                    text = producto,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Total de la Comanda: ${productos.size * 5}€", // Precio fijo por producto (por ejemplo)
+            color = Color.White,
+            fontSize = 20.sp
+        )
+    }
+}
 
 
 
-    // Pantalla de Txat
+// Pantalla de Txat
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun TxatScreen() {
@@ -346,15 +552,15 @@ fun MyApp(navController: NavHostController) {
             OutlinedTextField(
                 value = newMessage.value,
                 onValueChange = { newMessage.value = it },
-                label = { Text("Escribe un mensaje", color = Color.White) },
+                label = { Text("Idatzi zure mezua", color = Color.White) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
                 textStyle = LocalTextStyle.current.copy(color = Color.White),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
+                colors = OutlinedTextFieldDefaults.colors(
+                    cursorColor = Color.White,
                     focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.White,
-                    cursorColor = Color.White
                 )
             )
 
@@ -371,7 +577,7 @@ fun MyApp(navController: NavHostController) {
                     .fillMaxWidth()
                     .padding(8.dp)
             ) {
-                Text(text = "Enviar", color = Color.White)
+                Text(text = "Bidali", color = Color.White)
             }
         }
     }
@@ -437,8 +643,25 @@ fun MyApp(navController: NavHostController) {
 
     @Composable
     @Preview
-    fun PreviewComandaScreen() {
-        ComandaScreen(mesaId = 1)
+    fun PreviewBebidaScreen() {
+        BebidaScreen(mesaId = 0 )
+    }
+
+    @Composable
+    @Preview
+    fun PreviewPrimerosScreen() {
+        PrimerosScreen(mesaId = 0 )
+    }
+    @Composable
+    @Preview
+    fun PreviewSegundosScreen() {
+        SegundosScreen(mesaId = 0 )
+    }
+
+    @Composable
+    @Preview
+    fun PreviewComandoTotalScreen() {
+        ComandoTotalScreen(mesaId = 0, productos = listOf("Producto 1", "Producto 2"))
     }
 
     @Preview(showBackground = true)
