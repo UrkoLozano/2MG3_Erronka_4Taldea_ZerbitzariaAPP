@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
+import android.content.Context
+import android.os.Build.VERSION_CODES.R
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
@@ -51,7 +55,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.zerbitzariapp.R
+import java.sql.Connection
+import java.sql.DriverManager
 
 
 class MainActivity : ComponentActivity() {
@@ -86,16 +91,36 @@ fun MyApp(navController: NavHostController) {
             arguments = listOf(navArgument("mesaId") { type = NavType.IntType })
         ) { backStackEntry ->
             val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
-            BebidaScreen(mesaId = mesaId)
+            BebidaScreen(mesaId = mesaId, navController = navController) // Pasar el navController aquí
         }
+
 
         // Navegación al chat
         composable("txat") { TxatScreen() }
 
         // Navegación a la pantalla de ver pedidos
         composable("eskariak") { EskariakIkusiScreen() }
+
+        // Navegación a la pantalla de primeros platos
+        composable(
+            "primeros/{mesaId}",
+            arguments = listOf(navArgument("mesaId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
+            PrimerosScreen(mesaId = mesaId)
+        }
+
+        // Navegación a la pantalla de segundos platos
+        composable(
+            "segundos/{mesaId}",
+            arguments = listOf(navArgument("mesaId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
+            SegundosScreen(mesaId = mesaId)
+        }
     }
 }
+
 
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -108,6 +133,8 @@ fun MyApp(navController: NavHostController) {
         val primaryBackgroundColor = Color(0xFF345A7B)
         val buttonColor = Color(0xFF666E6C)
         val textFieldBorderColor = Color.White
+
+        val context = LocalContext.current
 
         Column(
             modifier = Modifier
@@ -178,7 +205,14 @@ fun MyApp(navController: NavHostController) {
 
             Button(
                 onClick = {
-                    navController.navigate("home")
+                    val success = connectToMySQL(
+                        username = username.value,
+                        password = password.value,
+                        context = context
+                    )
+                    if (success) {
+                        navController.navigate("home")
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = buttonColor
@@ -191,7 +225,33 @@ fun MyApp(navController: NavHostController) {
             }
         }
     }
-    //pantalla de chat
+
+fun connectToMySQL(username: String, password: String, context: Context): Boolean {
+    val driver = "com.mysql.jdbc.Driver"
+    val database = "Tienda"
+    val serverIp = "192.168.1.1" // Reemplaza con la IP de tu servidor
+    val port = "3306"
+    val url = "jdbc:mysql://$serverIp:$port/$database"
+    var connection: Connection? = null
+    return try {
+        Class.forName(driver).getDeclaredConstructor().newInstance()
+        connection = DriverManager.getConnection(url, username, password)
+        if (!connection.isClosed) {
+            Toast.makeText(context, "Conexión exitosa", Toast.LENGTH_LONG).show()
+            true
+        } else {
+            Toast.makeText(context, "No se pudo conectar", Toast.LENGTH_LONG).show()
+            false
+        }
+    } catch (e: Exception) {
+        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        false
+    } finally {
+        connection?.close()
+    }
+}
+
+//pantalla de chat
     @Composable
     fun HomeScreen(navController: NavController) {
         val primaryBackgroundColor = Color(0xFF345A7B)
@@ -285,66 +345,103 @@ fun MyApp(navController: NavHostController) {
     }
 
 @Composable
-fun BebidaScreen(mesaId: Int) {
+fun BebidaScreen(mesaId: Int, navController: NavController) {
     val primaryBackgroundColor = Color(0xFF345A7B)
-    val bebidas = listOf("Coca-Cola", "Kas Naranja", "Kas Limón", "Agua", "Agua con gas", "Cerveza", "Vino Blanco", "Vino Tinto")
+    val bebidas = listOf("Coca-Cola", "Kas Naranja", "Agua", "Cerveza", "Vino Tinto")
 
     val bebidaSeleccionada = remember { mutableStateListOf<String>() }
 
-    Column(
+        Column(
         modifier = Modifier
             .fillMaxSize()
             .background(primaryBackgroundColor)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+        verticalArrangement = Arrangement.SpaceBetween // Para distribuir los elementos verticalmente
     ) {
-        Text(
-            text = "Mahai zenbakia: $mesaId",
-            color = Color.White,
-            fontSize = 24.sp
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            bebidas.forEach { bebida ->
-                Button(
-                    onClick = {
-                        bebidaSeleccionada.add(bebida)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = bebida, color = Color.White, fontSize = 16.sp)
+            Text(
+                text = "Mahai zenbakia: $mesaId",
+                color = Color.White,
+                fontSize = 24.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                bebidas.forEach { bebida ->
+                    Button(
+                        onClick = {
+                            bebidaSeleccionada.add(bebida)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                    ) {
+                        Text(text = bebida, color = Color.White, fontSize = 16.sp)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Hautatutako Edariak:",
+                color = Color.White,
+                fontSize = 20.sp
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                items(bebidaSeleccionada) { bebida ->
+                    Text(
+                        text = bebida,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(4.dp)
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Hautatutako Edariak:",
-            color = Color.White,
-            fontSize = 20.sp
-        )
-
-        LazyColumn(
+        // Contenedor para los botones "Atzera" y "Hurrengoa"
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween // Botones en los extremos
         ) {
-            items(bebidaSeleccionada) { bebida ->
-                Text(text = bebida, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+            Button(
+                onClick = { navController.popBackStack() }, // Acción de volver atrás
+                modifier = Modifier.padding(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+            ) {
+                Text(text = "Atzera", color = Color.White)
+            }
+
+            Button(
+                onClick = { navController.navigate("hurrengoa/$mesaId") }, // Navegar a la siguiente pantalla
+                modifier = Modifier.padding(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+            ) {
+                Text(text = "Hurrengoa", color = Color.White)
             }
         }
     }
 }
+
+
 
 @Composable
 fun PrimerosScreen(mesaId: Int) {
@@ -405,7 +502,7 @@ fun PrimerosScreen(mesaId: Int) {
                 Text(text = lehenPlatera, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
             }
         }
-    }
+            }
 }
 
 @Composable
@@ -464,7 +561,12 @@ fun SegundosScreen(mesaId: Int) {
                 .padding(8.dp)
         ) {
             items(bigarrenHautatuak) { bigarrenPlatera ->
-                Text(text = bigarrenPlatera, color = Color.White, fontSize = 16.sp, modifier = Modifier.padding(4.dp))
+                Text(
+                    text = bigarrenPlatera,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(4.dp)
+                )
             }
         }
     }
@@ -508,7 +610,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Total de la Comanda: ${productos.size * 5}€", // Precio fijo por producto (por ejemplo)
+            text = "", // Precio fijo por producto (por ejemplo)
             color = Color.White,
             fontSize = 20.sp
         )
@@ -522,7 +624,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
     @Composable
     fun TxatScreen() {
         val primaryBackgroundColor = Color(0xFF345A7B)
-        val messageList = listOf("Mensaje 1", "Mensaje 2", "Mensaje 3", "Mensaje 4") // Lista de mensajes
+        val messageList = listOf("") // Lista de mensajes
         val newMessage = remember { mutableStateOf(TextFieldValue("")) }
 
         Column(
@@ -586,11 +688,13 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
     @Composable
     fun EskariakIkusiScreen() {
         val primaryBackgroundColor = Color(0xFF345A7B)
-        val orders = listOf(
-            "Pedido 1: Pizza - 2x - En preparación",
-            "Pedido 2: Pasta - 1x - Listo",
-            "Pedido 3: Ensalada - 3x - En camino"
-        ) // Lista de pedidos
+        // Lista mutable para los pedidos
+        val orders = remember { mutableStateListOf<String>() }
+        // Simulamos un pedido vacío o con productos, puedes agregar más productos aquí o integrarlos con el proceso de selección
+        if (orders.isEmpty()) {
+            // Si no hay pedidos, se muestra un mensaje
+            orders.add("Sin pedidos actuales")
+        }
 
         Column(
             modifier = Modifier
@@ -620,10 +724,27 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Botón para vaciar la lista de pedidos
+            Button(
+                onClick = {
+                    orders.clear()  // Esto vacía la lista de pedidos
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Text(text = "Eskariak ezabatu", color = Color.White)
+            }
         }
     }
 
-    @Preview(showBackground = true )
+
+
+@Preview(showBackground = true )
     @Composable
     fun PreviewLoginScreen() {
         LoginScreen(navController = rememberNavController())
@@ -644,7 +765,8 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
     @Composable
     @Preview
     fun PreviewBebidaScreen() {
-        BebidaScreen(mesaId = 0 )
+        val fakeNavController = rememberNavController() // Crear un NavController simulado
+        BebidaScreen(mesaId = 0, navController = fakeNavController) // Pasar el NavController
     }
 
     @Composable
@@ -661,7 +783,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>) {
     @Composable
     @Preview
     fun PreviewComandoTotalScreen() {
-        ComandoTotalScreen(mesaId = 0, productos = listOf("Producto 1", "Producto 2"))
+        ComandoTotalScreen(mesaId = 0, productos = listOf(""))
     }
 
     @Preview(showBackground = true)
