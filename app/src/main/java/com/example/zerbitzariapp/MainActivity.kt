@@ -1,7 +1,8 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 import android.content.Context
-import android.os.Build.VERSION_CODES.R
+//import android.os.Build.VERSION_CODES.R
+
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -55,6 +56,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.myapplication.R
 import java.sql.Connection
 import java.sql.DriverManager
 
@@ -203,7 +205,7 @@ fun MyApp(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
+           /*Button(
                 onClick = {
                     val success = connectToMySQL(
                         username = username.value,
@@ -222,11 +224,11 @@ fun MyApp(navController: NavHostController) {
                     .padding(8.dp)
             ) {
                 Text(text = "Saioa hasi", color = Color.White, fontSize = 16.sp)
-            }
+            }*/
         }
     }
 
-fun connectToMySQL(username: String, password: String, context: Context): Boolean {
+/*fun connectToMySQL(username: String, password: String, context: Context): Boolean {
     val driver = "com.mysql.jdbc.Driver"
     val database = "Tienda"
     val serverIp = "192.168.1.1" // Reemplaza con la IP de tu servidor
@@ -250,7 +252,7 @@ fun connectToMySQL(username: String, password: String, context: Context): Boolea
         connection?.close()
     }
 }
-
+*/
 //pantalla de chat
     @Composable
     fun HomeScreen(navController: NavController) {
