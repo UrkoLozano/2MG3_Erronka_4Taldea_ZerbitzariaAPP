@@ -12,6 +12,7 @@
         defaultConfig {
             applicationId = "com.example.myapplication"
             minSdk = 25
+            //noinspection OldTargetApi
             targetSdk = 34
             versionCode = 1
             versionName = "1.0"
@@ -69,19 +70,20 @@
         androidTestImplementation(libs.androidx.ui.test.junit4)
         debugImplementation(libs.androidx.ui.tooling)
         debugImplementation(libs.androidx.ui.test.manifest)
-        implementation("androidx.compose.ui:ui:1.7.6") // Compose
-        implementation("androidx.room:room-runtime:2.6.1") // Room
-        implementation("androidx.room:room-ktx:2.6.1") // Room
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+        implementation(libs.ui) // Compose
+        implementation(libs.androidx.room.runtime) // Room
+        implementation(libs.androidx.room.ktx) // Room
+        implementation(libs.kotlinx.coroutines.core)
+        implementation(libs.kotlinx.coroutines.android)
         implementation(kotlin("script-runtime"))
-        implementation("androidx.navigation:navigation-fragment-ktx:2.8.5")
-        implementation("androidx.navigation:navigation-ui-ktx:2.8.5")
-        implementation("com.google.dagger:dagger-android-support:2.55")
-        kapt("com.google.dagger:dagger-android-processor:2.55")
-        kapt("com.google.dagger:dagger-compiler:2.55")
-        kapt("androidx.room:room-compiler:2.6.1")
-        implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.0")
+        implementation(libs.androidx.navigation.fragment.ktx)
+        implementation(libs.androidx.navigation.ui.ktx)
+        implementation(libs.dagger.android.support)
+        kapt(libs.dagger.android.processor)
+        kapt(libs.dagger.compiler)
+        //noinspection KaptUsageInsteadOfKsp
+        kapt(libs.androidx.room.compiler)
+        implementation(libs.kotlin.stdlib)
 
 
 
