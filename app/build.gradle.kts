@@ -1,20 +1,30 @@
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
+    id("com.google.devtools.ksp")
+
+    //id("kotlin-kapt") // Plugin para Room (compilador)
+
 }
 
 android {
-    namespace = "com.example.zerbitzariaapp"
+    namespace = "com.example.myapplication"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.zerbitzariaapp"
+        applicationId = "com.example.myapplication"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
@@ -27,16 +37,27 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
     }
-    buildToolsVersion = "35.0.0"
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.1"
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+   /* kapt {
+        useBuildCache = false
+        //val incremental = false
+    }*/
 }
 
 dependencies {
@@ -49,11 +70,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.volley)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.material3.android)
+    implementation(libs.support.annotations)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -61,10 +81,28 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation ("io.ktor:ktor-client-core:2.3.0")
-    implementation ("io.ktor:ktor-client-android:2.3.0")
-    implementation ("io.ktor:ktor-client-json:2.3.0")
-    implementation ("io.ktor:ktor-client-serialization:2.3.0")
-    implementation ("com.android.volley:volley:1.2.1")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
+    implementation(libs.ui) // Compose
+    implementation(libs.ui.tooling)
+    implementation(libs.androidx.room.runtime) // Room
+    implementation(libs.androidx.room.ktx) // Room
+    implementation(libs.kotlinx.coroutines.core.v170)
+    implementation(libs.kotlinx.coroutines.android.v170)
+    implementation(kotlin("script-runtime"))
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.dagger.android.support)
+    ksp("androidx.room:room-compiler:2.6.1")
+    //kapt(libs.dagger.android.processor)
+    //kapt(libs.dagger.compiler.v247)
+    //kapt("androidx.room:room-compiler:2.6.1")
+    //implementation(libs.kotlin.stdlib)
+    implementation(libs.gradle)
+
+
+
+}
+repositories {
+    google()
+    mavenCentral()
+
 }
