@@ -13,7 +13,7 @@
         android:theme="@style/Theme.ZerbitzariAPP"
         tools:targetApi="31">
         <activity
-            android:name="MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:label="ZerbitzariaAPP"
             android:theme="@style/Theme.ZerbitzariAPP"

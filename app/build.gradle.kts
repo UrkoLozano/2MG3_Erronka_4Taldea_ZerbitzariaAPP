@@ -51,7 +51,7 @@ android {
     }
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "xsd/catalog.xml"
         }
     }
    /* kapt {
@@ -91,13 +91,11 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.dagger.android.support)
-    ksp("androidx.room:room-compiler:2.6.1")
+    ksp(libs.androidx.room.compiler)
     //kapt(libs.dagger.android.processor)
     //kapt(libs.dagger.compiler.v247)
     //kapt("androidx.room:room-compiler:2.6.1")
     //implementation(libs.kotlin.stdlib)
-    implementation(libs.gradle)
-
 
 
 }
