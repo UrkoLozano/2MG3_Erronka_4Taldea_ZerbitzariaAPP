@@ -54,10 +54,10 @@ android {
             excludes += "xsd/catalog.xml"
         }
     }
-   /* kapt {
-        useBuildCache = false
-        //val incremental = false
-    }*/
+    /* kapt {
+         useBuildCache = false
+         //val incremental = false
+     }*/
 }
 
 dependencies {
@@ -92,6 +92,8 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.dagger.android.support)
     ksp(libs.androidx.room.compiler)
+    implementation ("com.squareup.okhttp3:okhttp:4.11.0")
+
     //kapt(libs.dagger.android.processor)
     //kapt(libs.dagger.compiler.v247)
     //kapt("androidx.room:room-compiler:2.6.1")
