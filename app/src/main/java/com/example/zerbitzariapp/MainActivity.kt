@@ -37,6 +37,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
@@ -67,6 +70,17 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
+
 
 
 class MainActivity : ComponentActivity() {
@@ -373,7 +387,7 @@ fun MesaScreen(onMesaSelected: (Int) -> Unit) {
                 horizontalArrangement = Arrangement.SpaceAround,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                for (mesaId in (row * 4 + 1)..(row * 4 + 4)) {
+                for (mesaId in (row * 2 + 1)..(row * 2 + 2)) {
                     Box(
                         modifier = Modifier
                             .size(80.dp)
@@ -391,10 +405,15 @@ fun MesaScreen(onMesaSelected: (Int) -> Unit) {
 }
 
 @Composable
-fun BebidaScreen(mesaId: Int, navController: NavController) {
+fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaViewModel = viewModel()) {
     val primaryBackgroundColor = Color(0xFF345A7B)
-    val bebidas = listOf("Coca-Cola", "Kas Naranja", "Agua", "Cerveza", "Vino Tinto")
+    val bebidas by viewModel.bebidas.collectAsState() // Observa la lista de bebidas desde el ViewModel
     val bebidaSeleccionada = remember { mutableStateMapOf<String, Int>() }
+
+    // Llamar al método de ViewModel para cargar datos si aún no se han cargado
+    LaunchedEffect(Unit) {
+        viewModel.obtenerBebidas()
+    }
 
     Column(
         modifier = Modifier
@@ -411,22 +430,32 @@ fun BebidaScreen(mesaId: Int, navController: NavController) {
             Text(
                 text = "Mahai zenbakia: $mesaId",
                 color = Color.White,
-                fontSize = 24.sp
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            bebidas.forEach { bebida ->
-                Button(
-                    onClick = {
-                        bebidaSeleccionada[bebida] = (bebidaSeleccionada[bebida] ?: 0) + 1
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = bebida, color = Color.White, fontSize = 16.sp)
+            // Mostrar las bebidas dinámicamente
+            if (bebidas.isEmpty()) {
+                Text(
+                    text = "Kargatzen...",
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            } else {
+                bebidas.forEach { bebida ->
+                    Button(
+                        onClick = {
+                            bebidaSeleccionada[bebida] = (bebidaSeleccionada[bebida] ?: 0) + 1
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                    ) {
+                        Text(text = bebida, color = Color.White, fontSize = 16.sp)
+                    }
                 }
             }
 
@@ -504,6 +533,66 @@ fun BebidaScreen(mesaId: Int, navController: NavController) {
         }
     }
 }
+
+class BebidaViewModel : ViewModel() {
+    private val _bebidas = MutableStateFlow<List<String>>(emptyList())
+    val bebidas: StateFlow<List<String>> = _bebidas
+
+    fun obtenerBebidas() {
+        viewModelScope.launch {
+            try {
+                Log.d("BebidaViewModel", "Iniciando obtención de bebidas...")
+                val bebidasDesdeServidor = obtenerBebidasDesdeServidor()
+                if (bebidasDesdeServidor.isEmpty()) {
+                    Log.d("BebidaViewModel", "No se recibieron bebidas desde el servidor.")
+                } else {
+                    Log.d("BebidaViewModel", "Bebidas obtenidas: $bebidasDesdeServidor")
+                }
+                _bebidas.value = bebidasDesdeServidor
+            } catch (e: Exception) {
+                Log.e("BebidaViewModel", "Error al obtener bebidas", e)
+                _bebidas.value = emptyList() // En caso de error, dejamos la lista vacía
+            }
+        }
+    }
+
+    private suspend fun obtenerBebidasDesdeServidor(): List<String> {
+        val url = "http://10.0.2.2/obtener_bebidas.php"
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("BebidaViewModel", "Enviando solicitud al servidor: $url")
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body?.string()
+                    Log.d("BebidaViewModel", "Respuesta del servidor: $json")
+                    if (!json.isNullOrEmpty()) {
+                        val jsonArray = JSONArray(json)
+                        val bebidas = mutableListOf<String>()
+                        for (i in 0 until jsonArray.length()) {
+                            bebidas.add(jsonArray.getString(i))
+                        }
+                        return@withContext bebidas
+                    } else {
+                        Log.w("BebidaViewModel", "El cuerpo de la respuesta está vacío.")
+                    }
+                } else {
+                    Log.e("BebidaViewModel", "Error en la respuesta del servidor: ${response.code}")
+                }
+                return@withContext emptyList()
+            } catch (e: Exception) {
+                Log.e("BebidaViewModel", "Excepción durante la solicitud", e)
+                return@withContext emptyList()
+            }
+        }
+    }
+}
+
+
 
 @Composable
 fun PrimerosScreen(mesaId: Int, productos: List<String>, navController: NavController) {
@@ -619,6 +708,7 @@ fun PrimerosScreen(mesaId: Int, productos: List<String>, navController: NavContr
         }
     }
 }
+
 
 @Composable
 fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavController) {
