@@ -128,7 +128,7 @@ fun MyApp(navController: NavHostController) {
         ) { backStackEntry ->
             val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
             val productos = backStackEntry.arguments?.getString("productos")?.split(",") ?: emptyList()
-            PrimerosScreen(mesaId = mesaId,  navController = navController)
+            PrimerosScreen(mesaId = mesaId, navController = navController, productos = productos)
         }
 
         // Navegación a segundos platos
@@ -309,8 +309,6 @@ fun LoginScreen(navController: NavController) {
     }
 }
 
-
-
 //pantalla de chat
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -361,6 +359,7 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
+
 //pantalla para ver las mesas que hay
 @Composable
 fun MesaScreen(onMesaSelected: (Int) -> Unit) {
@@ -522,8 +521,8 @@ fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaVie
 
             Button(
                 onClick = {
-                    val productos = bebidaSeleccionada.map { "${it.key} x${it.value}" }
-                    navController.navigate("primeros/$mesaId/${productos.joinToString(",")}")
+                    val bebidasSeleccionadas = bebidaSeleccionada.map { "${it.key} x${it.value}" }
+                    navController.navigate("primeros/$mesaId/${bebidasSeleccionadas.joinToString(",")}")
                 },
                 modifier = Modifier.padding(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
@@ -595,7 +594,7 @@ class BebidaViewModel : ViewModel() {
 
 
 @Composable
-fun PrimerosScreen(mesaId: Int, navController: NavController, viewModel: PrimerosViewModel = viewModel()) {
+fun PrimerosScreen(mesaId: Int, navController: NavController, productos: List<String>, viewModel: PrimerosViewModel = viewModel()) {
     val primaryBackgroundColor = Color(0xFF345A7B)
     val primeros by viewModel.primeros.collectAsState() // Observa la lista de primeros desde el ViewModel
     val primerosSeleccionados = remember { mutableStateMapOf<String, Int>() }
@@ -712,14 +711,15 @@ fun PrimerosScreen(mesaId: Int, navController: NavController, viewModel: Primero
 
             Button(
                 onClick = {
-                    val productos = primerosSeleccionados.map { "${it.key} x${it.value}" }
-                    navController.navigate("segundos/$mesaId/${productos.joinToString(",")}")
+                    val nuevosProductos = productos + primerosSeleccionados.map { "${it.key} x${it.value}" }
+                    navController.navigate("segundos/$mesaId/${nuevosProductos.joinToString(",")}")
                 },
                 modifier = Modifier.padding(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
             ) {
                 Text(text = "Hurrengoa", color = Color.White)
             }
+
         }
     }
 }
@@ -785,12 +785,7 @@ class PrimerosViewModel : ViewModel() {
 
 
 @Composable
-fun SegundosScreen(
-    mesaId: Int,
-    productos: List<String>,
-    navController: NavController,
-    viewModel: SegundosViewModel = viewModel()
-) {
+fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavController, viewModel: SegundosViewModel = viewModel()) {
     val primaryBackgroundColor = Color(0xFF345A7B)
     val segundos by viewModel.segundos.collectAsState() // Observa la lista de segundos desde el ViewModel
     val segundosSeleccionados = remember { mutableStateMapOf<String, Int>() }
@@ -1190,7 +1185,8 @@ fun PreviewPrimerosScreen() {
     val fakeNavController = rememberNavController() // Crea un controlador ficticio
     PrimerosScreen(
         mesaId = 0,
-        navController = fakeNavController
+        navController = fakeNavController,
+        productos = listOf()
     )
 }
 
@@ -1223,4 +1219,3 @@ fun PreviewTxatScreen() {
 fun PreviewEskariakIkusiScreen() {
     EskariakIkusiScreen()
 }
-
