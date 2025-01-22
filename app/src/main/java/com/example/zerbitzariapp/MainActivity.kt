@@ -785,10 +785,20 @@ class PrimerosViewModel : ViewModel() {
 
 
 @Composable
-fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavController) {
+fun SegundosScreen(
+    mesaId: Int,
+    productos: List<String>,
+    navController: NavController,
+    viewModel: SegundosViewModel = viewModel()
+) {
     val primaryBackgroundColor = Color(0xFF345A7B)
-    val segundos = listOf("Arraina", "Oilaskoa", "Txuleta", "Lekaleak", "Barazkiak")
+    val segundos by viewModel.segundos.collectAsState() // Observa la lista de segundos desde el ViewModel
     val segundosSeleccionados = remember { mutableStateMapOf<String, Int>() }
+
+    // Llamar al método de ViewModel para cargar datos si aún no se han cargado
+    LaunchedEffect(Unit) {
+        viewModel.obtenerSegundos()
+    }
 
     Column(
         modifier = Modifier
@@ -805,22 +815,32 @@ fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavContr
             Text(
                 text = "Mahai zenbakia: $mesaId",
                 color = Color.White,
-                fontSize = 24.sp
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            segundos.forEach { plato ->
-                Button(
-                    onClick = {
-                        segundosSeleccionados[plato] = (segundosSeleccionados[plato] ?: 0) + 1
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = plato, color = Color.White, fontSize = 16.sp)
+            // Mostrar los segundos platos dinámicamente
+            if (segundos.isEmpty()) {
+                Text(
+                    text = "Kargatzen...",
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            } else {
+                segundos.forEach { plato ->
+                    Button(
+                        onClick = {
+                            segundosSeleccionados[plato] = (segundosSeleccionados[plato] ?: 0) + 1
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                    ) {
+                        Text(text = plato, color = Color.White, fontSize = 16.sp)
+                    }
                 }
             }
 
@@ -898,6 +918,65 @@ fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavContr
         }
     }
 }
+
+class SegundosViewModel : ViewModel() {
+    private val _segundos = MutableStateFlow<List<String>>(emptyList())
+    val segundos: StateFlow<List<String>> = _segundos
+
+    fun obtenerSegundos() {
+        viewModelScope.launch {
+            try {
+                Log.d("SegundosViewModel", "Iniciando obtención de segundos platos...")
+                val segundosDesdeServidor = obtenerSegundosDesdeServidor()
+                if (segundosDesdeServidor.isEmpty()) {
+                    Log.d("SegundosViewModel", "No se recibieron segundos platos desde el servidor.")
+                } else {
+                    Log.d("SegundosViewModel", "Segundos platos obtenidos: $segundosDesdeServidor")
+                }
+                _segundos.value = segundosDesdeServidor
+            } catch (e: Exception) {
+                Log.e("SegundosViewModel", "Error al obtener segundos platos", e)
+                _segundos.value = emptyList()
+            }
+        }
+    }
+
+    private suspend fun obtenerSegundosDesdeServidor(): List<String> {
+        val url = "http://10.0.2.2/obtener_segundos.php"
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("SegundosViewModel", "Enviando solicitud al servidor: $url")
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body?.string()
+                    Log.d("SegundosViewModel", "Respuesta del servidor: $json")
+                    if (!json.isNullOrEmpty()) {
+                        val jsonArray = JSONArray(json)
+                        val segundos = mutableListOf<String>()
+                        for (i in 0 until jsonArray.length()) {
+                            segundos.add(jsonArray.getString(i))
+                        }
+                        return@withContext segundos
+                    } else {
+                        Log.w("SegundosViewModel", "El cuerpo de la respuesta está vacío.")
+                    }
+                } else {
+                    Log.e("SegundosViewModel", "Error en la respuesta del servidor: ${response.code}")
+                }
+                return@withContext emptyList()
+            } catch (e: Exception) {
+                Log.e("SegundosViewModel", "Excepción durante la solicitud", e)
+                return@withContext emptyList()
+            }
+        }
+    }
+}
+
 
 @Composable
 fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavController) {
