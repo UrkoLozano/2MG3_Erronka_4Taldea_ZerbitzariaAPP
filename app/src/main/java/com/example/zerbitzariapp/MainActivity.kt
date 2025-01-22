@@ -128,7 +128,7 @@ fun MyApp(navController: NavHostController) {
         ) { backStackEntry ->
             val mesaId = backStackEntry.arguments?.getInt("mesaId") ?: 0
             val productos = backStackEntry.arguments?.getString("productos")?.split(",") ?: emptyList()
-            PrimerosScreen(mesaId = mesaId, productos = productos, navController = navController)
+            PrimerosScreen(mesaId = mesaId,  navController = navController)
         }
 
         // Navegación a segundos platos
@@ -595,10 +595,15 @@ class BebidaViewModel : ViewModel() {
 
 
 @Composable
-fun PrimerosScreen(mesaId: Int, productos: List<String>, navController: NavController) {
+fun PrimerosScreen(mesaId: Int, navController: NavController, viewModel: PrimerosViewModel = viewModel()) {
     val primaryBackgroundColor = Color(0xFF345A7B)
-    val primeros = listOf("Entsalada", "Arroza", "Zopa", "Makarroiak", "Patatak")
+    val primeros by viewModel.primeros.collectAsState() // Observa la lista de primeros desde el ViewModel
     val primerosSeleccionados = remember { mutableStateMapOf<String, Int>() }
+
+    // Llamar al método de ViewModel para cargar datos si aún no se han cargado
+    LaunchedEffect(Unit) {
+        viewModel.obtenerPrimeros()
+    }
 
     Column(
         modifier = Modifier
@@ -615,22 +620,32 @@ fun PrimerosScreen(mesaId: Int, productos: List<String>, navController: NavContr
             Text(
                 text = "Mahai zenbakia: $mesaId",
                 color = Color.White,
-                fontSize = 24.sp
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            primeros.forEach { plato ->
-                Button(
-                    onClick = {
-                        primerosSeleccionados[plato] = (primerosSeleccionados[plato] ?: 0) + 1
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = plato, color = Color.White, fontSize = 16.sp)
+            // Mostrar los primeros platos dinámicamente
+            if (primeros.isEmpty()) {
+                Text(
+                    text = "Kargatzen...",
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            } else {
+                primeros.forEach { plato ->
+                    Button(
+                        onClick = {
+                            primerosSeleccionados[plato] = (primerosSeleccionados[plato] ?: 0) + 1
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+                    ) {
+                        Text(text = plato, color = Color.White, fontSize = 16.sp)
+                    }
                 }
             }
 
@@ -697,8 +712,8 @@ fun PrimerosScreen(mesaId: Int, productos: List<String>, navController: NavContr
 
             Button(
                 onClick = {
-                    val nuevosProductos = productos + primerosSeleccionados.map { "${it.key} x${it.value}" }
-                    navController.navigate("segundos/$mesaId/${nuevosProductos.joinToString(",")}")
+                    val productos = primerosSeleccionados.map { "${it.key} x${it.value}" }
+                    navController.navigate("segundos/$mesaId/${productos.joinToString(",")}")
                 },
                 modifier = Modifier.padding(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
@@ -708,6 +723,65 @@ fun PrimerosScreen(mesaId: Int, productos: List<String>, navController: NavContr
         }
     }
 }
+
+class PrimerosViewModel : ViewModel() {
+    private val _primeros = MutableStateFlow<List<String>>(emptyList())
+    val primeros: StateFlow<List<String>> = _primeros
+
+    fun obtenerPrimeros() {
+        viewModelScope.launch {
+            try {
+                Log.d("PrimerosViewModel", "Iniciando obtención de primeros platos...")
+                val primerosDesdeServidor = obtenerPrimerosDesdeServidor()
+                if (primerosDesdeServidor.isEmpty()) {
+                    Log.d("PrimerosViewModel", "No se recibieron primeros platos desde el servidor.")
+                } else {
+                    Log.d("PrimerosViewModel", "Primeros platos obtenidos: $primerosDesdeServidor")
+                }
+                _primeros.value = primerosDesdeServidor
+            } catch (e: Exception) {
+                Log.e("PrimerosViewModel", "Error al obtener primeros platos", e)
+                _primeros.value = emptyList()
+            }
+        }
+    }
+
+    private suspend fun obtenerPrimerosDesdeServidor(): List<String> {
+        val url = "http://10.0.2.2/obtener_primeros.php"
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("PrimerosViewModel", "Enviando solicitud al servidor: $url")
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body?.string()
+                    Log.d("PrimerosViewModel", "Respuesta del servidor: $json")
+                    if (!json.isNullOrEmpty()) {
+                        val jsonArray = JSONArray(json)
+                        val primeros = mutableListOf<String>()
+                        for (i in 0 until jsonArray.length()) {
+                            primeros.add(jsonArray.getString(i))
+                        }
+                        return@withContext primeros
+                    } else {
+                        Log.w("PrimerosViewModel", "El cuerpo de la respuesta está vacío.")
+                    }
+                } else {
+                    Log.e("PrimerosViewModel", "Error en la respuesta del servidor: ${response.code}")
+                }
+                return@withContext emptyList()
+            } catch (e: Exception) {
+                Log.e("PrimerosViewModel", "Excepción durante la solicitud", e)
+                return@withContext emptyList()
+            }
+        }
+    }
+}
+
 
 
 @Composable
@@ -1037,8 +1111,7 @@ fun PreviewPrimerosScreen() {
     val fakeNavController = rememberNavController() // Crea un controlador ficticio
     PrimerosScreen(
         mesaId = 0,
-        navController = fakeNavController,
-        productos = listOf()// Pasa el controlador ficticio
+        navController = fakeNavController
     )
 }
 
