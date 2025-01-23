@@ -42,6 +42,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -85,12 +86,18 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.io.PrintWriter
+import java.net.Socket
 
 
 class MainActivity : ComponentActivity() {
@@ -111,7 +118,13 @@ fun MyApp(navController: NavHostController) {
     ) {
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
-        composable("txat") { TxatScreen(navController) }
+        composable(
+            route = "txat",
+            arguments = listOf(navArgument("username") { defaultValue = "User" }) // Parámetro username
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: "User"
+            TxatScreen(navController, username)
+        }
         composable("eskariak") { EskariakIkusiScreen(navController) }
 
         composable("mesas") {
@@ -1102,24 +1115,71 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
 
 
 
-
-
-
-// Pantalla de Txat
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TxatScreen(navController: NavHostController) {
+fun TxatScreen(navController: NavHostController, username: String, host: String = "192.168.115.153", port: Int = 5555) {
     val primaryBackgroundColor = Color(0xFF345A7B)
-    val messageList = listOf("") // Lista de mensajes
+    val messageList = remember { mutableStateListOf<String>() } // Lista mutable para mensajes
     val newMessage = remember { mutableStateOf(TextFieldValue("")) }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
+    // Variables para la conexión
+    val socket = remember { mutableStateOf<Socket?>(null) }
+    val out = remember { mutableStateOf<PrintWriter?>(null) }
+    val input = remember { mutableStateOf<BufferedReader?>(null) }
+
+    // Conexión al servidor al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val socketConnection = Socket(host, port)
+                socket.value = socketConnection
+                out.value = PrintWriter(OutputStreamWriter(socketConnection.getOutputStream()), true)
+                input.value = BufferedReader(InputStreamReader(socketConnection.getInputStream()))
+
+                // Recibir mensajes del servidor
+                while (socketConnection.isConnected) {
+                    val message = input.value?.readLine()
+                    if (message != null) {
+                        withContext(Dispatchers.Main) {
+                            messageList.add(message)
+                        }
+                    }
+                }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error al conectar con el servidor: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    // Cerrar conexión al salir de la pantalla
+    DisposableEffect(Unit) {
+        onDispose {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    input.value?.close()
+                    out.value?.close()
+                    socket.value?.close()
+                } catch (e: IOException) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error al cerrar conexión: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    // Interfaz de usuario
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(primaryBackgroundColor)
             .padding(16.dp)
     ) {
-        // Botón de retroceso
+        // Botón de retroceso y título
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -1134,19 +1194,24 @@ fun TxatScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Lista de mensajes
-        LazyColumn(modifier = Modifier.weight(1f)) {
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
             items(messageList) { message ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
+                        .padding(vertical = 4.dp)
                 ) {
                     Text(text = message, color = Color.White)
                 }
             }
         }
 
-        // Campo para nuevo mensaje
+        // Campo para escribir un nuevo mensaje
         OutlinedTextField(
             value = newMessage.value,
             onValueChange = { newMessage.value = it },
@@ -1167,8 +1232,25 @@ fun TxatScreen(navController: NavHostController) {
         // Botón para enviar mensaje
         Button(
             onClick = {
-                // Acción de enviar mensaje (podrías agregar la lógica aquí)
-                newMessage.value = TextFieldValue("") // Limpiar el campo después de enviar el mensaje
+                val message = newMessage.value.text
+                if (message.isNotEmpty()) {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        try {
+                            val formattedMessage = "$username: $message"
+                            out.value?.println(formattedMessage)
+                            withContext(Dispatchers.Main) {
+                                messageList.add("Tú: $message")
+                                newMessage.value = TextFieldValue("") // Limpiar campo
+                            }
+                        } catch (e: IOException) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Error al enviar el mensaje: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "No puedes enviar un mensaje vacío", Toast.LENGTH_SHORT).show()
+                }
             },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C)),
             modifier = Modifier
@@ -1179,6 +1261,7 @@ fun TxatScreen(navController: NavHostController) {
         }
     }
 }
+
 
 // Pantalla de Eskariak Ikusi (Ver pedidos)
 @Composable
@@ -1308,8 +1391,9 @@ fun PreviewComandoTotalScreen() {
 @Composable
 fun PreviewTxatScreen() {
     val navController = rememberNavController()
-    TxatScreen(navController = navController)
+    TxatScreen(navController = navController, username = "PreviewUser")
 }
+
 
 @Preview(showBackground = true)
 @Composable
