@@ -26,16 +26,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,7 +85,12 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.LaunchedEffect
-
+import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 
 class MainActivity : ComponentActivity() {
@@ -97,19 +107,19 @@ class MainActivity : ComponentActivity() {
 fun MyApp(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = "login" // Rutas disponibles en la aplicación
+        startDestination = "login" // Cambié la pantalla inicial a 'home' para pruebas
     ) {
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
+        composable("txat") { TxatScreen(navController) }
+        composable("eskariak") { EskariakIkusiScreen(navController) }
 
-        // Navegación a la pantalla de mesas
         composable("mesas") {
             MesaScreen { mesaId ->
                 navController.navigate("detalleMesa/$mesaId")
             }
         }
 
-        // Navegación al detalle de una mesa (bebidas)
         composable(
             "detalleMesa/{mesaId}",
             arguments = listOf(navArgument("mesaId") { type = NavType.IntType })
@@ -118,7 +128,6 @@ fun MyApp(navController: NavHostController) {
             BebidaScreen(mesaId = mesaId, navController = navController)
         }
 
-        // Navegación a primeros platos
         composable(
             "primeros/{mesaId}/{productos}",
             arguments = listOf(
@@ -131,7 +140,6 @@ fun MyApp(navController: NavHostController) {
             PrimerosScreen(mesaId = mesaId, navController = navController, productos = productos)
         }
 
-        // Navegación a segundos platos
         composable(
             "segundos/{mesaId}/{productos}",
             arguments = listOf(
@@ -144,7 +152,6 @@ fun MyApp(navController: NavHostController) {
             SegundosScreen(mesaId = mesaId, productos = productos, navController = navController)
         }
 
-        // Navegación a la pantalla final de resumen del pedido
         composable(
             "comandoTotal/{mesaId}/{productos}",
             arguments = listOf(
@@ -158,7 +165,6 @@ fun MyApp(navController: NavHostController) {
         }
     }
 }
-
 
 
 
@@ -975,6 +981,7 @@ class SegundosViewModel : ViewModel() {
 
 @Composable
 fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavController) {
+    val context = LocalContext.current
     val primaryBackgroundColor = Color(0xFF345A7B)
 
     Column(
@@ -983,7 +990,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
             .background(primaryBackgroundColor)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween // Asegura que el botón quede al final
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -1003,18 +1010,86 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
                     .padding(8.dp)
             ) {
                 items(productos) { producto ->
-                    Text(
-                        text = producto,
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(4.dp)
-                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF4A708B)), // Fondo del card
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Sombra del card
+                        shape = RoundedCornerShape(8.dp) // Bordes redondeados
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star, // Cambia este ícono si prefieres otro
+                                contentDescription = null,
+                                tint = Color.Yellow,
+                                modifier = Modifier.size(24.dp) // Tamaño del ícono
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = producto,
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                modifier = Modifier.weight(1f) // Ocupa el resto del espacio disponible
+                            )
+                        }
+                    }
                 }
             }
         }
 
         Button(
-            onClick = { navController.navigate("home") }, // Navegar a "home"
+            onClick = {
+                // Aquí realizamos la lógica de enviar la comanda al servidor
+                if (productos.isNotEmpty()) {
+                    val url = "http://10.0.2.2/enviar_comanda.php" // Cambia IP si es necesario
+                    val client = OkHttpClient()
+                    val jsonBody = JSONObject().apply {
+                        put("mesaId", mesaId)
+                        put("productos", JSONArray(productos)) // Convertimos la lista en un JSONArray
+                    }
+
+                    val requestBody = RequestBody.create(
+                        "application/json; charset=utf-8".toMediaTypeOrNull(),
+                        jsonBody.toString()
+                    )
+
+                    val request = Request.Builder()
+                        .url(url)
+                        .post(requestBody)
+                        .build()
+
+                    client.newCall(request).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {
+                            e.printStackTrace()
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(context, "Error al conectar con el servidor", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+
+                        override fun onResponse(call: Call, response: Response) {
+                            val responseBody = response.body?.string()
+                            if (response.isSuccessful) {
+                                Handler(Looper.getMainLooper()).post {
+                                    Toast.makeText(context, "Comanda enviada con éxito", Toast.LENGTH_SHORT).show()
+                                    navController.navigate("home")
+                                }
+                            } else {
+                                Handler(Looper.getMainLooper()).post {
+                                    Toast.makeText(context, "Error al enviar la comanda", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    })
+                } else {
+                    Toast.makeText(context, "No hay productos para enviar", Toast.LENGTH_SHORT).show()
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp),
@@ -1029,10 +1104,11 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
 
 
 
+
 // Pantalla de Txat
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TxatScreen() {
+fun TxatScreen(navController: NavHostController) {
     val primaryBackgroundColor = Color(0xFF345A7B)
     val messageList = listOf("") // Lista de mensajes
     val newMessage = remember { mutableStateOf(TextFieldValue("")) }
@@ -1041,10 +1117,20 @@ fun TxatScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(primaryBackgroundColor)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
     ) {
-        Text("Txateatu", color = Color.White, fontSize = 20.sp)
+        // Botón de retroceso
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = { navController.popBackStack() }) {
+                Text("etxera", color = Color.White)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Txateatu", color = Color.White, fontSize = 20.sp)
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Lista de mensajes
@@ -1096,7 +1182,7 @@ fun TxatScreen() {
 
 // Pantalla de Eskariak Ikusi (Ver pedidos)
 @Composable
-fun EskariakIkusiScreen() {
+fun EskariakIkusiScreen(navController: NavHostController) {
     val primaryBackgroundColor = Color(0xFF345A7B)
     // Lista mutable para los pedidos
     val orders = remember { mutableStateListOf<String>() }
@@ -1110,10 +1196,20 @@ fun EskariakIkusiScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(primaryBackgroundColor)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
     ) {
-        Text("Eskariak Ikusi", color = Color.White, fontSize = 20.sp)
+        // Botón de retroceso
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = { navController.popBackStack() }) {
+                Text("etxera", color = Color.White)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Eskariak Ikusi", color = Color.White, fontSize = 20.sp)
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Lista de pedidos
@@ -1211,11 +1307,13 @@ fun PreviewComandoTotalScreen() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewTxatScreen() {
-    TxatScreen()
+    val navController = rememberNavController()
+    TxatScreen(navController = navController)
 }
 
 @Preview(showBackground = true)
 @Composable
 fun PreviewEskariakIkusiScreen() {
-    EskariakIkusiScreen()
+    val navController = rememberNavController()
+    EskariakIkusiScreen(navController = navController)
 }
