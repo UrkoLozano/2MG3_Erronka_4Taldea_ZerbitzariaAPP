@@ -2,6 +2,7 @@
 package com.example.zerbitzariapp
 //import android.os.Build.VERSION_CODES.R
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -327,8 +328,7 @@ fun LoginScreen(navController: NavController) {
         }
     }
 }
-
-//pantalla de chat
+        //pantalla de chat
 @Composable
 fun HomeScreen(navController: NavController) {
     val primaryBackgroundColor = Color(0xFF345A7B)
@@ -462,17 +462,18 @@ fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaVie
                     fontSize = 18.sp
                 )
             } else {
-                bebidas.forEach { bebida ->
+                bebidas.forEach { (id, nombre) ->
                     Button(
                         onClick = {
-                            bebidaSeleccionada[bebida] = (bebidaSeleccionada[bebida] ?: 0) + 1
+                            val bebidaKey = "$id - $nombre"
+                            bebidaSeleccionada[bebidaKey] = (bebidaSeleccionada[bebidaKey] ?: 0) + 1
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = bebida, color = Color.White, fontSize = 16.sp)
+                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
@@ -553,8 +554,8 @@ fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaVie
 }
 
 class BebidaViewModel : ViewModel() {
-    private val _bebidas = MutableStateFlow<List<String>>(emptyList())
-    val bebidas: StateFlow<List<String>> = _bebidas
+    private val _bebidas = MutableStateFlow<List<Pair<Int, String>>>(emptyList())
+    val bebidas: StateFlow<List<Pair<Int, String>>> = _bebidas
 
     fun obtenerBebidas() {
         viewModelScope.launch {
@@ -574,7 +575,7 @@ class BebidaViewModel : ViewModel() {
         }
     }
 
-    private suspend fun obtenerBebidasDesdeServidor(): List<String> {
+    private suspend fun obtenerBebidasDesdeServidor(): List<Pair<Int, String>> {
         val url = "http://10.0.2.2/obtener_bebidas.php"
         val client = OkHttpClient()
         val request = Request.Builder()
@@ -590,9 +591,10 @@ class BebidaViewModel : ViewModel() {
                     Log.d("BebidaViewModel", "Respuesta del servidor: $json")
                     if (!json.isNullOrEmpty()) {
                         val jsonArray = JSONArray(json)
-                        val bebidas = mutableListOf<String>()
+                        val bebidas = mutableListOf<Pair<Int, String>>()
                         for (i in 0 until jsonArray.length()) {
-                            bebidas.add(jsonArray.getString(i))
+                            val obj = jsonArray.getJSONObject(i)
+                            bebidas.add(Pair(obj.getInt("id"), obj.getString("izena")))
                         }
                         return@withContext bebidas
                     } else {
@@ -609,6 +611,7 @@ class BebidaViewModel : ViewModel() {
         }
     }
 }
+
 
 
 
@@ -652,17 +655,18 @@ fun PrimerosScreen(mesaId: Int, navController: NavController, productos: List<St
                     fontSize = 18.sp
                 )
             } else {
-                primeros.forEach { plato ->
+                primeros.forEach { (id, nombre) ->
                     Button(
                         onClick = {
-                            primerosSeleccionados[plato] = (primerosSeleccionados[plato] ?: 0) + 1
+                            val platoKey = "$id - $nombre"
+                            primerosSeleccionados[platoKey] = (primerosSeleccionados[platoKey] ?: 0) + 1
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = plato, color = Color.White, fontSize = 16.sp)
+                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
@@ -744,8 +748,8 @@ fun PrimerosScreen(mesaId: Int, navController: NavController, productos: List<St
 }
 
 class PrimerosViewModel : ViewModel() {
-    private val _primeros = MutableStateFlow<List<String>>(emptyList())
-    val primeros: StateFlow<List<String>> = _primeros
+    private val _primeros = MutableStateFlow<List<Pair<Int, String>>>(emptyList())
+    val primeros: StateFlow<List<Pair<Int, String>>> = _primeros
 
     fun obtenerPrimeros() {
         viewModelScope.launch {
@@ -765,7 +769,7 @@ class PrimerosViewModel : ViewModel() {
         }
     }
 
-    private suspend fun obtenerPrimerosDesdeServidor(): List<String> {
+    private suspend fun obtenerPrimerosDesdeServidor(): List<Pair<Int, String>> {
         val url = "http://10.0.2.2/obtener_primeros.php"
         val client = OkHttpClient()
         val request = Request.Builder()
@@ -781,9 +785,10 @@ class PrimerosViewModel : ViewModel() {
                     Log.d("PrimerosViewModel", "Respuesta del servidor: $json")
                     if (!json.isNullOrEmpty()) {
                         val jsonArray = JSONArray(json)
-                        val primeros = mutableListOf<String>()
+                        val primeros = mutableListOf<Pair<Int, String>>()
                         for (i in 0 until jsonArray.length()) {
-                            primeros.add(jsonArray.getString(i))
+                            val obj = jsonArray.getJSONObject(i)
+                            primeros.add(Pair(obj.getInt("id"), obj.getString("izena")))
                         }
                         return@withContext primeros
                     } else {
@@ -843,17 +848,18 @@ fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavContr
                     fontSize = 18.sp
                 )
             } else {
-                segundos.forEach { plato ->
+                segundos.forEach { (id, nombre) ->
                     Button(
                         onClick = {
-                            segundosSeleccionados[plato] = (segundosSeleccionados[plato] ?: 0) + 1
+                            val platoKey = "$id - $nombre"
+                            segundosSeleccionados[platoKey] = (segundosSeleccionados[platoKey] ?: 0) + 1
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = plato, color = Color.White, fontSize = 16.sp)
+                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
@@ -934,8 +940,8 @@ fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavContr
 }
 
 class SegundosViewModel : ViewModel() {
-    private val _segundos = MutableStateFlow<List<String>>(emptyList())
-    val segundos: StateFlow<List<String>> = _segundos
+    private val _segundos = MutableStateFlow<List<Pair<Int, String>>>(emptyList())
+    val segundos: StateFlow<List<Pair<Int, String>>> = _segundos
 
     fun obtenerSegundos() {
         viewModelScope.launch {
@@ -955,7 +961,7 @@ class SegundosViewModel : ViewModel() {
         }
     }
 
-    private suspend fun obtenerSegundosDesdeServidor(): List<String> {
+    private suspend fun obtenerSegundosDesdeServidor(): List<Pair<Int, String>> {
         val url = "http://10.0.2.2/obtener_segundos.php"
         val client = OkHttpClient()
         val request = Request.Builder()
@@ -971,9 +977,10 @@ class SegundosViewModel : ViewModel() {
                     Log.d("SegundosViewModel", "Respuesta del servidor: $json")
                     if (!json.isNullOrEmpty()) {
                         val jsonArray = JSONArray(json)
-                        val segundos = mutableListOf<String>()
+                        val segundos = mutableListOf<Pair<Int, String>>()
                         for (i in 0 until jsonArray.length()) {
-                            segundos.add(jsonArray.getString(i))
+                            val obj = jsonArray.getJSONObject(i)
+                            segundos.add(Pair(obj.getInt("id"), obj.getString("izena")))
                         }
                         return@withContext segundos
                     } else {
@@ -1058,13 +1065,23 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
 
         Button(
             onClick = {
-                // Aquí realizamos la lógica de enviar la comanda al servidor
                 if (productos.isNotEmpty()) {
-                    val url = "http://10.0.2.2/enviar_comanda.php" // Cambia IP si es necesario
+                    val url = "http://10.0.2.2/enviar_comanda.php" // Cambia la IP si es necesario
                     val client = OkHttpClient()
+
+                    // Convertimos la lista de productos (String) a un formato que incluya ID y nombre
+                    val productosConId = productos.mapIndexed { index, producto ->
+                        val partes = producto.split(" - ") // Suponiendo que el formato es "ID - Nombre"
+                        JSONObject().apply {
+                            put("id", partes[0].toInt()) // ID del producto
+                            put("nombre", partes[1])    // Nombre del producto
+                            put("fecha_hora", System.currentTimeMillis() + index * 1000) // Incrementa 1 segundo
+                        }
+                    }
+
                     val jsonBody = JSONObject().apply {
                         put("mesaId", mesaId)
-                        put("productos", JSONArray(productos)) // Convertimos la lista en un JSONArray
+                        put("productos", JSONArray(productosConId))
                     }
 
                     val requestBody = RequestBody.create(
@@ -1114,8 +1131,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
 }
 
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+        @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TxatScreen(navController: NavHostController, username: String, host: String = "192.168.115.153", port: Int = 5555) {
     val primaryBackgroundColor = Color(0xFF345A7B)
