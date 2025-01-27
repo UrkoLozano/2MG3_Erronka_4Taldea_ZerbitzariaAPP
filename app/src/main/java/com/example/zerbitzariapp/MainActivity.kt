@@ -343,43 +343,49 @@ fun LoginScreen(navController: NavController) {
 
 @Composable
 fun HomeScreen(navController: NavController, username: String) {
-            val primaryBackgroundColor = Color(0xFF345A7B)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(primaryBackgroundColor)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.restaurant_logo),
-                    contentDescription = "Descripción de la imagen",
-                    modifier = Modifier
-                        .size(350.dp)
-                        .padding(bottom = 32.dp)
-                )
-                Button(
-                    onClick = { navController.navigate("mesas") },
-                    modifier = Modifier
-                        .width(250.dp)
-                        .padding(6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = "ESKAERAREKIN HASI", color = Color.White)
-                }
-
-                               Button(
-                    onClick = { navController.navigate("txat/$username") },
-                    modifier = Modifier
-                        .width(250.dp)
-                        .padding(6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = "TXATEATU", color = Color.White)
-                }
-            }
+    val primaryBackgroundColor = Color(0xFF345A7B)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(primaryBackgroundColor)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top // Keep image at the top
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.restaurant_logo),
+            contentDescription = "Descripción de la imagen",
+            modifier = Modifier
+                .size(350.dp)
+                .padding(bottom = 32.dp)
+        )
+        Spacer(modifier = Modifier.height(80.dp)) // Added space between image and buttons
+        Button(
+            onClick = { navController.navigate("mesas") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Increased height for larger button
+                .padding(6.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+        ) {
+            Text(text = "ESKAERAREKIN HASI", color = Color.White, fontSize = 20.sp)
         }
+
+        Spacer(modifier = Modifier.height(16.dp)) // Added spacing between buttons
+
+        Button(
+            onClick = { navController.navigate("txat/$username") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp) // Increased height for larger button
+                .padding(6.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+        ) {
+            Text(text = "TXATEATU", color = Color.White, fontSize = 20.sp)
+        }
+    }
+}
+
 
 //pantalla para ver las mesas que hay
 @Composable
@@ -427,7 +433,7 @@ fun MesaScreen(onMesaSelected: (Int) -> Unit, navController: NavController) {
             onClick = { navController.navigate("home/{username}") },
             modifier = Modifier
                 .width(250.dp)
-                .padding(6.dp),
+                .padding(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
         ) {
             Text(text = "ATERA", color = Color.White)
