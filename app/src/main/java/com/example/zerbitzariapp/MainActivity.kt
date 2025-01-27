@@ -140,16 +140,14 @@ fun MyApp(navController: NavHostController) {
             TxatScreen(navController = navController, username = username)
         }
 
-        // Pantalla Eskariak Ikusi
-        composable("eskariak") {
-            EskariakIkusiScreen(navController)
-        }
-
-        // Pantalla de Mesas
+                // Pantalla de Mesas
         composable("mesas") {
-            MesaScreen { mesaId ->
-                navController.navigate("detalleMesa/$mesaId")
-            }
+            MesaScreen(
+                onMesaSelected = { mesaId ->
+                    navController.navigate("detalleMesa/$mesaId")
+                },
+                navController = navController // Pasa el navController
+            )
         }
 
         // Detalles de una mesa específica
@@ -371,17 +369,7 @@ fun HomeScreen(navController: NavController, username: String) {
                     Text(text = "ESKAERAREKIN HASI", color = Color.White)
                 }
 
-                Button(
-                    onClick = { navController.navigate("eskariak") },
-                    modifier = Modifier
-                        .width(250.dp)
-                        .padding(6.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
-                ) {
-                    Text(text = "ESKAERAK IKUSI", color = Color.White)
-                }
-
-                Button(
+                               Button(
                     onClick = { navController.navigate("txat/$username") },
                     modifier = Modifier
                         .width(250.dp)
@@ -395,7 +383,7 @@ fun HomeScreen(navController: NavController, username: String) {
 
 //pantalla para ver las mesas que hay
 @Composable
-fun MesaScreen(onMesaSelected: (Int) -> Unit) {
+fun MesaScreen(onMesaSelected: (Int) -> Unit, navController: NavController) {
     val primaryBackgroundColor = Color(0xFF345A7B)
     Column(
         modifier = Modifier
@@ -432,6 +420,17 @@ fun MesaScreen(onMesaSelected: (Int) -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Botón Atera para navegar a home
+        Button(
+            onClick = { navController.navigate("home/{username}") },
+            modifier = Modifier
+                .width(250.dp)
+                .padding(6.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+        ) {
+            Text(text = "ATERA", color = Color.White)
         }
     }
 }
@@ -1121,7 +1120,8 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
                             if (response.isSuccessful) {
                                 Handler(Looper.getMainLooper()).post {
                                     Toast.makeText(context, "Comanda enviada con éxito", Toast.LENGTH_SHORT).show()
-                                    navController.navigate("home")
+                                    val username = "NombreDeUsuario" // Reemplaza con tu lógica para obtener el nombre de usuario
+                                    navController.navigate("home/$username")
                                 }
                             } else {
                                 Handler(Looper.getMainLooper()).post {
@@ -1129,6 +1129,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
                                 }
                             }
                         }
+
                     })
                 } else {
                     Toast.makeText(context, "No hay productos para enviar", Toast.LENGTH_SHORT).show()
@@ -1296,150 +1297,6 @@ fun TxatScreen(navController: NavHostController, username: String, host: String 
             }
         }
 
-// Pantalla de Eskariak Ikusi (Ver pedidos)
-@Composable
-fun EskariakIkusiScreen(navController: NavHostController, ordersViewModel: OrdersViewModel = viewModel()) {
-    val primaryBackgroundColor = Color(0xFF345A7B)
-    val orders by ordersViewModel.orders.collectAsState()
-
-    LaunchedEffect(Unit) {
-        ordersViewModel.fetchOrders() // Llama al ViewModel para obtener los pedidos
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(primaryBackgroundColor)
-            .padding(16.dp)
-    ) {
-        // Botón de retroceso
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = { navController.popBackStack() }) {
-                Text("etxera", color = Color.White)
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Eskariak Ikusi", color = Color.White, fontSize = 20.sp)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Lista de pedidos
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            if (orders.isEmpty()) {
-                item {
-                    Text(
-                        text = "Sin pedidos actuales",
-                        color = Color.White,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            } else {
-                items(orders) { order ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.cardColors(containerColor = Color.Gray)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Text(text = order, color = Color.White, fontSize = 16.sp)
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Botón para recargar pedidos
-        Button(
-            onClick = { ordersViewModel.fetchOrders() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-        ) {
-            Text(text = "Recargar pedidos", color = Color.White)
-        }
-    }
-}
-
-class OrdersViewModel : ViewModel() {
-    private val _orders = MutableStateFlow<List<String>>(emptyList())
-    val orders: StateFlow<List<String>> = _orders
-
-    fun fetchOrders() {
-        viewModelScope.launch {
-            try {
-                Log.d("OrdersViewModel", "Fetching orders...")
-                val ordersFromServer = fetchOrdersFromServer()
-                if (ordersFromServer.isEmpty()) {
-                    Log.d("OrdersViewModel", "No orders received from the server.")
-                } else {
-                    Log.d("OrdersViewModel", "Orders fetched successfully: $ordersFromServer")
-                }
-                _orders.value = ordersFromServer
-            } catch (e: Exception) {
-                Log.e("OrdersViewModel", "Error fetching orders", e)
-                _orders.value = emptyList()
-            }
-        }
-    }
-
-    private suspend fun fetchOrdersFromServer(): List<String> {
-        val url = "http://10.0.2.2/get_orders.php"
-        val client = OkHttpClient()
-        val request = Request.Builder()
-            .url(url)
-            .build()
-
-        return withContext(Dispatchers.IO) {
-            try {
-                Log.d("OrdersViewModel", "Sending request to server: $url")
-                val response = client.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val json = response.body?.string()
-                    Log.d("OrdersViewModel", "Server response: $json")
-                    if (!json.isNullOrEmpty()) {
-                        val jsonObject = JSONObject(json)
-                        if (jsonObject.getString("status") == "success") {
-                            val ordersArray = jsonObject.getJSONArray("data")
-                            val ordersList = mutableListOf<String>()
-                            for (i in 0 until ordersArray.length()) {
-                                val order = ordersArray.getJSONObject(i)
-                                val mesaId = order.getInt("mesa_id")
-                                val producto = order.getString("producto")
-                                val fechaHora = order.getString("fecha_hora")
-                                ordersList.add("Mesa $mesaId: $producto ($fechaHora)")
-                            }
-                            return@withContext ordersList
-                        } else {
-                            Log.e("OrdersViewModel", "Error in server response: ${jsonObject.getString("message")}")
-                        }
-                    } else {
-                        Log.w("OrdersViewModel", "Empty response body.")
-                    }
-                } else {
-                    Log.e("OrdersViewModel", "HTTP error: ${response.code}")
-                }
-                return@withContext emptyList()
-            } catch (e: Exception) {
-                Log.e("OrdersViewModel", "Exception during request", e)
-                return@withContext emptyList()
-            }
-        }
-    }
-}
-
-
-
-
 
 @Preview(showBackground = true )
 @Composable
@@ -1458,8 +1315,13 @@ fun PreviewHomeScreen() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewMesaScreen() {
-    MesaScreen(onMesaSelected = {})
+    // Crear un NavController simulado para la vista previa
+    val navController = rememberNavController()
+
+    // Llamar a MesaScreen y pasar el navController simulado
+    MesaScreen(onMesaSelected = {}, navController = navController)
 }
+
 
 @Composable
 @Preview
@@ -1505,9 +1367,3 @@ fun PreviewTxatScreen() {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewEskariakIkusiScreen() {
-    val navController = rememberNavController()
-    EskariakIkusiScreen(navController = navController)
-}
