@@ -277,7 +277,7 @@ fun LoginScreen(navController: NavController) {
         Button(
             onClick = {
                 if (username.value.isNotEmpty() && password.value.isNotEmpty()) {
-                    val url = "http://10.0.2.2/login.php" // Cambia IP para dispositivo físico
+                    val url = "http://192.168.115.153/login.php" // Cambia IP para dispositivo físico
                     val client = OkHttpClient()
                     val formBody = FormBody.Builder()
                         .add("username", username.value)
@@ -483,7 +483,7 @@ class MesaViewModel : ViewModel() {
     }
 
     private suspend fun obtenerMesasDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://10.0.2.2/get_mesas.php" // Reemplaza con tu URL
+        val url = "http://192.168.115.153/get_mesas.php" // Reemplaza con tu URL
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -674,7 +674,7 @@ class BebidaViewModel : ViewModel() {
     }
 
     private suspend fun obtenerBebidasDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://10.0.2.2/obtener_bebidas.php"
+        val url = "http://192.168.115.153/obtener_bebidas.php"
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -868,7 +868,7 @@ class PrimerosViewModel : ViewModel() {
     }
 
     private suspend fun obtenerPrimerosDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://10.0.2.2/obtener_primeros.php"
+        val url = "http://192.168.115.153/obtener_primeros.php"
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -1060,7 +1060,7 @@ class SegundosViewModel : ViewModel() {
     }
 
     private suspend fun obtenerSegundosDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://10.0.2.2/obtener_segundos.php"
+        val url = "http://192.168.115.153/obtener_segundos.php"
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -1164,7 +1164,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
         Button(
             onClick = {
                 if (productos.isNotEmpty()) {
-                    val url = "http://10.0.2.2/enviar_comanda.php" // Cambia la IP si es necesario
+                    val url = "http://192.168.115.153/enviar_comanda.php" // Cambia la IP si es necesario
                     val client = OkHttpClient()
 
                     // Convertimos la lista de productos (String) a un formato que incluya ID y nombre
