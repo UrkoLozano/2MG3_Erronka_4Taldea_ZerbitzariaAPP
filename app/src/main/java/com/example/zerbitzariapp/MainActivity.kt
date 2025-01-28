@@ -2,7 +2,6 @@
 package com.example.zerbitzariapp
 //import android.os.Build.VERSION_CODES.R
 
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -37,7 +36,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -88,11 +86,9 @@ import org.json.JSONArray
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -140,14 +136,9 @@ fun MyApp(navController: NavHostController) {
             TxatScreen(navController = navController, username = username)
         }
 
-                // Pantalla de Mesas
+        // Pantalla de Mesas
         composable("mesas") {
-            MesaScreen(
-                onMesaSelected = { mesaId ->
-                    navController.navigate("detalleMesa/$mesaId")
-                },
-                navController = navController // Pasa el navController
-            )
+            MesaScreen(navController = navController) // ✅ Solo pasamos el NavController
         }
 
         // Detalles de una mesa específica
@@ -199,6 +190,7 @@ fun MyApp(navController: NavHostController) {
         }
     }
 }
+
 
 
 
@@ -387,10 +379,16 @@ fun HomeScreen(navController: NavController, username: String) {
 }
 
 
-//pantalla para ver las mesas que hay
 @Composable
-fun MesaScreen(onMesaSelected: (Int) -> Unit, navController: NavController) {
+fun MesaScreen(navController: NavController, viewModel: MesaViewModel = viewModel()) {
     val primaryBackgroundColor = Color(0xFF345A7B)
+    val mesas by viewModel.mesas.collectAsState() // Observa las mesas desde el ViewModel
+    val mesaSeleccionada = remember { mutableStateOf<Pair<Int, String>?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.obtenerMesas()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -398,48 +396,129 @@ fun MesaScreen(onMesaSelected: (Int) -> Unit, navController: NavController) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.restaurant_logo),
-            contentDescription = "Descripción de la imagen",
-            modifier = Modifier
-                .size(350.dp)
-                .padding(bottom = 32.dp)
+        Text(
+            text = "Hautatu zure mahaia",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
         )
-        Text("Zein mahai da?", color = Color.White, fontSize = 20.sp)
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        for (row in 0 until 3) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
+        if (mesas.isEmpty()) {
+            Text(
+                text = "Kargatzen...",
+                color = Color.White,
+                fontSize = 18.sp
+            )
+        } else {
+            LazyColumn(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                for (mesaId in (row * 2 + 1)..(row * 2 + 2)) {
-                    Box(
+                items(mesas) { (id, nombre) ->
+                    Button(
+                        onClick = { navController.navigate("detalleMesa/$id") }, // Navegación al detalle de la mesa
                         modifier = Modifier
-                            .size(80.dp)
-                            .background(Color.Gray, shape = CircleShape)
-                            .clickable { onMesaSelected(mesaId) },
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = "M$mesaId", color = Color.White)
+                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Botón Atera para navegar a home
+        Spacer(modifier = Modifier.height(16.dp))
+
+        mesaSeleccionada.value?.let { (id, nombre) ->
+            Text(
+                text = "Mahai hautatua: $nombre",
+                color = Color.White,
+                fontSize = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { navController.navigate("detalleMesa/$id") }, // Navegación al detalle de la mesa
+                modifier = Modifier.padding(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
+            ) {
+                Text(text = "Hurrengoa", color = Color.White)
+            }
+        }
+
         Button(
-            onClick = { navController.navigate("home/{username}") },
-            modifier = Modifier
-                .width(250.dp)
-                .padding(8.dp),
+            onClick = { navController.popBackStack() },
+            modifier = Modifier.padding(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
         ) {
-            Text(text = "ATERA", color = Color.White)
+            Text(text = "Atzera", color = Color.White)
         }
     }
 }
+
+
+class MesaViewModel : ViewModel() {
+    private val _mesas = MutableStateFlow<List<Pair<Int, String>>>(emptyList())
+    val mesas: StateFlow<List<Pair<Int, String>>> = _mesas
+
+    fun obtenerMesas() {
+        viewModelScope.launch {
+            try {
+                Log.d("MesaViewModel", "Iniciando obtención de mesas...")
+                val mesasDesdeServidor = obtenerMesasDesdeServidor()
+                if (mesasDesdeServidor.isEmpty()) {
+                    Log.d("MesaViewModel", "No se recibieron mesas desde el servidor.")
+                } else {
+                    Log.d("MesaViewModel", "Mesas obtenidas: $mesasDesdeServidor")
+                }
+                _mesas.value = mesasDesdeServidor
+            } catch (e: Exception) {
+                Log.e("MesaViewModel", "Error al obtener mesas", e)
+                _mesas.value = emptyList() // En caso de error, lista vacía
+            }
+        }
+    }
+
+    private suspend fun obtenerMesasDesdeServidor(): List<Pair<Int, String>> {
+        val url = "http://10.0.2.2/get_mesas.php" // Reemplaza con tu URL
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("MesaViewModel", "Enviando solicitud al servidor: $url")
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body?.string()
+                    Log.d("MesaViewModel", "Respuesta del servidor: $json")
+                    if (!json.isNullOrEmpty()) {
+                        val jsonArray = JSONArray(json)
+                        val mesas = mutableListOf<Pair<Int, String>>()
+                        for (i in 0 until jsonArray.length()) {
+                            val obj = jsonArray.getJSONObject(i)
+                            mesas.add(Pair(obj.getInt("id"), obj.getString("izena")))
+                        }
+                        return@withContext mesas
+                    } else {
+                        Log.w("MesaViewModel", "El cuerpo de la respuesta está vacío.")
+                    }
+                } else {
+                    Log.e("MesaViewModel", "Error en la respuesta del servidor: ${response.code}")
+                }
+                return@withContext emptyList()
+            } catch (e: Exception) {
+                Log.e("MesaViewModel", "Excepción durante la solicitud", e)
+                return@withContext emptyList()
+            }
+        }
+    }
+}
+
 
 @Composable
 fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaViewModel = viewModel()) {
@@ -1321,12 +1400,11 @@ fun PreviewHomeScreen() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewMesaScreen() {
-    // Crear un NavController simulado para la vista previa
     val navController = rememberNavController()
 
-    // Llamar a MesaScreen y pasar el navController simulado
-    MesaScreen(onMesaSelected = {}, navController = navController)
+    MesaScreen(navController = navController) // ✅ Solo pasamos el NavController
 }
+
 
 
 @Composable
