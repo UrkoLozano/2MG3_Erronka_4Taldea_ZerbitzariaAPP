@@ -1,8 +1,9 @@
 <?php
-$host = "localhost:3306"; // Cambiar puerto si es necesario
-$user = "root";
-$password = "";
-$dbname = "erronka";
+$host = 'localhost:3306';
+$dbname = '2mg3_erronka_4taldea';
+$user = 'root';
+$password = '1WMG2023';
+
 
 $conn = new mysqli($host, $user, $password, $dbname);
 

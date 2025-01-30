@@ -1,12 +1,11 @@
 <?php
-// Configuración de la base de datos
-$host = "localhost:3306";
-$user = "root";
-$password = "";
-$database = "erronka";
+$host = 'localhost:3306';
+$dbname = '2mg3_erronka_4taldea';
+$user = 'root';
+$password = '1WMG2023';
 
-// Crear conexión
-$conn = new mysqli($host, $user, $password, $database);
+
+$conn = new mysqli($host, $user, $password, $dbname);
 
 // Verificar conexión
 if ($conn->connect_error) {

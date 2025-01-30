@@ -1,34 +1,33 @@
 <?php
-// Configuración de la base de datos
-$host = "localhost:3306"; // Cambia según tu configuración
-$user = "root"; // Usuario de la base de datos
-$password = ""; // Contraseña de la base de datos
-$database = "erronka"; // Nombre de la base de datos
+$host = 'localhost:3306';
+$dbname = '2mg3_erronka_4taldea';
+$user = 'root';
+$password = '1WMG2023';
 
-// Crear conexión
-$conn = new mysqli($host, $user, $password, $database);
+$conn = new mysqli($host, $user, $password, $dbname);
 
 // Verificar conexión
 if ($conn->connect_error) {
     die("Conexión fallida: " . $conn->connect_error);
 }
 
-// Consulta para obtener los segundos platos (Bigarrena)
-$sql = "SELECT id, izena FROM platera WHERE plater_mota = 'Bigarrena'";
+// Consulta para obtener los primeros platos (Lehenengoa) con precio
+$sql = "SELECT id, izena, prezioa FROM platera WHERE plater_mota = 'Bigarrena'";
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
-    $segundos = array();
+    $primeros = array();
 
     while ($row = $result->fetch_assoc()) {
-        $segundos[] = array(
+        $primeros[] = array(
             'id' => $row['id'],       // ID del plato
-            'izena' => $row['izena']  // Nombre del plato
+            'izena' => $row['izena'], // Nombre del plato
+            'prezioa' => $row['prezioa'] // Precio del plato
         );
     }
 
     // Devolver datos en formato JSON
-    echo json_encode($segundos);
+    echo json_encode($primeros);
 } else {
     echo json_encode([]); // Si no hay datos, devuelve un array vacío
 }

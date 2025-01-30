@@ -1,20 +1,18 @@
 <?php
-// Configuración de la base de datos
-$host = "localhost:3306"; // Cambia esto según tu configuración
-$user = "root"; // Usuario de la base de datos
-$password = ""; // Contraseña de la base de datos
-$database = "erronka"; // Nombre de la base de datos
+$host = 'localhost:3306';
+$dbname = '2mg3_erronka_4taldea';
+$user = 'root';
+$password = '1WMG2023';
 
-// Crear conexión
-$conn = new mysqli($host, $user, $password, $database);
+$conn = new mysqli($host, $user, $password, $dbname);
 
 // Verificar conexión
 if ($conn->connect_error) {
     die("Conexión fallida: " . $conn->connect_error);
 }
 
-// Consulta para obtener las bebidas
-$sql = "SELECT id, izena FROM edaria"; // Incluir ID y nombre de la bebida
+// Consulta para obtener las bebidas incluyendo el precio
+$sql = "SELECT id, izena, prezioa FROM edaria"; // Ahora incluye el precio (prezioa)
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
@@ -23,7 +21,8 @@ if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $bebidas[] = array(
             'id' => $row['id'],       // ID de la bebida
-            'izena' => $row['izena']  // Nombre de la bebida
+            'izena' => $row['izena'], // Nombre de la bebida
+            'prezioa' => $row['prezioa'] // Precio de la bebida
         );
     }
 
@@ -35,3 +34,4 @@ if ($result->num_rows > 0) {
 
 $conn->close();
 ?>
+

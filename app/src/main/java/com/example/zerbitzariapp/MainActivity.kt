@@ -74,7 +74,6 @@ import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.IOException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -91,10 +90,12 @@ import okhttp3.RequestBody
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.net.Socket
+
 
 
 class MainActivity : ComponentActivity() {
@@ -277,7 +278,7 @@ fun LoginScreen(navController: NavController) {
         Button(
             onClick = {
                 if (username.value.isNotEmpty() && password.value.isNotEmpty()) {
-                    val url = "http://192.168.115.153:8080/login.php" // Cambia IP para dispositivo físico
+                    val url = "http://10.0.2.2/login.php" // Cambia IP para dispositivo físico
                     val client = OkHttpClient()
                     val formBody = FormBody.Builder()
                         .add("username", username.value)
@@ -331,7 +332,7 @@ fun LoginScreen(navController: NavController) {
         }
     }
 }
-        //pantalla de chat
+//pantalla de chat
 
 @Composable
 fun HomeScreen(navController: NavController, username: String) {
@@ -483,7 +484,7 @@ class MesaViewModel : ViewModel() {
     }
 
     private suspend fun obtenerMesasDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://192.168.115.153:8080/get_mesas.php" // Reemplaza con tu URL
+        val url = "http://10.0.2.2/get_mesas.php" // Reemplaza con tu URL
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -563,7 +564,7 @@ fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaVie
                 bebidas.forEach { (id, nombre) ->
                     Button(
                         onClick = {
-                            val bebidaKey = "$id - $nombre"
+                            val bebidaKey = "E"+"$id - $nombre"
                             bebidaSeleccionada[bebidaKey] = (bebidaSeleccionada[bebidaKey] ?: 0) + 1
                         },
                         modifier = Modifier
@@ -571,7 +572,7 @@ fun BebidaScreen(mesaId: Int, navController: NavController, viewModel: BebidaVie
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
+                        Text(text = "E"+"$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
@@ -674,7 +675,7 @@ class BebidaViewModel : ViewModel() {
     }
 
     private suspend fun obtenerBebidasDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://192.168.115.153:8080/obtener_bebidas.php"
+        val url = "http://10.0.2.2/obtener_bebidas.php"
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -756,7 +757,7 @@ fun PrimerosScreen(mesaId: Int, navController: NavController, productos: List<St
                 primeros.forEach { (id, nombre) ->
                     Button(
                         onClick = {
-                            val platoKey = "$id - $nombre"
+                            val platoKey = "P" + "$id - $nombre"
                             primerosSeleccionados[platoKey] = (primerosSeleccionados[platoKey] ?: 0) + 1
                         },
                         modifier = Modifier
@@ -764,7 +765,7 @@ fun PrimerosScreen(mesaId: Int, navController: NavController, productos: List<St
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
+                        Text(text = "P" + "$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
@@ -868,7 +869,7 @@ class PrimerosViewModel : ViewModel() {
     }
 
     private suspend fun obtenerPrimerosDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://192.168.115.153:8080/obtener_primeros.php"
+        val url = "http://10.0.2.2/obtener_primeros.php"
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -949,7 +950,7 @@ fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavContr
                 segundos.forEach { (id, nombre) ->
                     Button(
                         onClick = {
-                            val platoKey = "$id - $nombre"
+                            val platoKey = "P" + "$id - $nombre"
                             segundosSeleccionados[platoKey] = (segundosSeleccionados[platoKey] ?: 0) + 1
                         },
                         modifier = Modifier
@@ -957,7 +958,7 @@ fun SegundosScreen(mesaId: Int, productos: List<String>, navController: NavContr
                             .padding(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C))
                     ) {
-                        Text(text = "$id - $nombre", color = Color.White, fontSize = 16.sp)
+                        Text(text = "P" + "$id - $nombre", color = Color.White, fontSize = 16.sp)
                     }
                 }
             }
@@ -1060,7 +1061,7 @@ class SegundosViewModel : ViewModel() {
     }
 
     private suspend fun obtenerSegundosDesdeServidor(): List<Pair<Int, String>> {
-        val url = "http://192.168.115.153:8080/obtener_segundos.php"
+        val url = "http://10.0.2.2/obtener_segundos.php"
         val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
@@ -1098,9 +1099,16 @@ class SegundosViewModel : ViewModel() {
 
 
 @Composable
-fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavController) {
+fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavController, ) {
     val context = LocalContext.current
     val primaryBackgroundColor = Color(0xFF345A7B)
+    val precios = remember { mutableStateOf<Map<Int, Float>>(emptyMap()) }
+
+    // Obtener los precios de los productos al cargar la pantalla
+    LaunchedEffect(productos) {
+        val preciosMap = obtenerPreciosDeProductos(productos) // Obtiene todos los precios
+        precios.value = preciosMap
+    }
 
     Column(
         modifier = Modifier
@@ -1128,6 +1136,15 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
                     .padding(8.dp)
             ) {
                 items(productos) { producto ->
+                    val partes = producto.split(" - ")
+
+                    val parteZero = partes[0]
+                    val tipoMenu = partes[0][0]
+                    val id = parteZero.substring(1).toInt()
+
+                    // Obtenemos el precio para el producto
+                    val precio = precios.value[id] ?: 0f
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1150,7 +1167,7 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = producto,
+                                text = "$producto - Precio: $precio €",
                                 color = Color.White,
                                 fontSize = 16.sp,
                                 modifier = Modifier.weight(1f) // Ocupa el resto del espacio disponible
@@ -1164,22 +1181,36 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
         Button(
             onClick = {
                 if (productos.isNotEmpty()) {
-                    val url = "http://192.168.115.153:8080/enviar_comanda.php" // Cambia la IP si es necesario
+                    val url = "http://10.0.2.2/enviar_comanda.php" // Cambia la IP si es necesario
                     val client = OkHttpClient()
 
                     // Convertimos la lista de productos (String) a un formato que incluya ID y nombre
                     val productosConId = productos.mapIndexed { index, producto ->
-                        val partes = producto.split(" - ") // Suponiendo que el formato es "ID - Nombre"
+                        val partes = producto.split(" - ")
+                        val parteZero = partes[0]
+                        val tipoMenu = partes[0][0]
+                        val id = parteZero.substring(1).toInt()
+                        val nombreCantidad = partes[1].split(" x")
+                        val nombre = nombreCantidad[0]
+                        val cantidad = if (nombreCantidad.size > 1) nombreCantidad[1].toInt() else 1
+
+                        val precio = precios.value[id] ?: 0f // Obtenemos el precio del producto
+
+                        Log.d("ProductoConPrecio", "Producto: $nombre, Precio: $precio, Cantidad: $cantidad")
+
                         JSONObject().apply {
-                            put("id", partes[0].toInt()) // ID del producto
-                            put("nombre", partes[1])    // Nombre del producto
-                            put("fecha_hora", System.currentTimeMillis() + index * 1000) // Incrementa 1 segundo
+                            put("id", id)
+                            put("nombre", nombre)
+                            put("kantitatea", cantidad)
+                            put("prezioa", precio) // Usamos el precio aquí
+                            put("tipo_menu", tipoMenu.toString())
+                            put("fecha_hora", System.currentTimeMillis() + index * 1000)
                         }
                     }
 
                     val jsonBody = JSONObject().apply {
-                        put("mesa_id", mesaId)  // Corregido a 'mesa_id' (anteriormente 'mesaId')
-                        put("producto", JSONArray(productosConId))  // Corregido a 'producto' (anteriormente 'productos')
+                        put("mesa_id", mesaId)
+                        put("producto", JSONArray(productosConId))  // Cambiado 'producto' por 'productos' para coincidir con el PHP
                     }
 
                     val requestBody = RequestBody.create(
@@ -1229,158 +1260,194 @@ fun ComandoTotalScreen(mesaId: Int, productos: List<String>, navController: NavC
     }
 }
 
+// Función suspendida para obtener los precios de los productos
+suspend fun obtenerPreciosDeProductos(productos: List<String>): Map<Int, Float> {
+    val preciosMap = mutableMapOf<Int, Float>()
+    val tipoDePlato = 0; //1 => Edariak
+    for (producto in productos) {
+        val partes = producto.split(" - ")
+        val parteZero = partes[0]
+        val tipoMenu = partes[0][0]
+        val id = parteZero.substring(1).toInt()
+        val precio = obtenerPrecioDelProducto(id, tipoMenu) // Llamamos la función suspendida
+        preciosMap[id] = precio
+    }
+    return preciosMap
+}
 
+suspend fun obtenerPrecioDelProducto(id: Int, tipoMenu: Char): Float {
+    val url = "http://10.0.2.2/obtener_precio.php?id=$id&tipoMenu=$tipoMenu"  // Ajusta la URL
+
+    val client = OkHttpClient()
+    val request = Request.Builder().url(url).build()
+
+    return withContext(Dispatchers.IO) {
+        try {
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val responseBody = response.body?.string()
+                val jsonResponse = JSONObject(responseBody)
+                return@withContext jsonResponse.optDouble("precio", 0.0).toFloat()
+            } else {
+                return@withContext 0f
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext 0f
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TxatScreen(navController: NavHostController, username: String, host: String = "192.168.115.153", port: Int = 5555) {
-            val primaryBackgroundColor = Color(0xFF345A7B)
-            val messageList = remember { mutableStateListOf<String>() } // Lista mutable para mensajes
-            val newMessage = remember { mutableStateOf(TextFieldValue("")) }
-            val coroutineScope = rememberCoroutineScope()
-            val context = LocalContext.current
+    val primaryBackgroundColor = Color(0xFF345A7B)
+    val messageList = remember { mutableStateListOf<String>() } // Lista mutable para mensajes
+    val newMessage = remember { mutableStateOf(TextFieldValue("")) }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-            // Variables para la conexión
-            val socket = remember { mutableStateOf<Socket?>(null) }
-            val out = remember { mutableStateOf<PrintWriter?>(null) }
-            val input = remember { mutableStateOf<BufferedReader?>(null) }
+    // Variables para la conexión
+    val socket = remember { mutableStateOf<Socket?>(null) }
+    val out = remember { mutableStateOf<PrintWriter?>(null) }
+    val input = remember { mutableStateOf<BufferedReader?>(null) }
 
-            // Conexión al servidor al iniciar la pantalla
-            LaunchedEffect(Unit) {
-                coroutineScope.launch(Dispatchers.IO) {
-                    try {
-                        val socketConnection = Socket(host, port)
-                        socket.value = socketConnection
-                        out.value = PrintWriter(OutputStreamWriter(socketConnection.getOutputStream()), true)
-                        input.value = BufferedReader(InputStreamReader(socketConnection.getInputStream()))
+    // Conexión al servidor al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val socketConnection = Socket(host, port)
+                socket.value = socketConnection
+                out.value = PrintWriter(OutputStreamWriter(socketConnection.getOutputStream()), true)
+                input.value = BufferedReader(InputStreamReader(socketConnection.getInputStream()))
 
-                        // Envía el nombre de usuario al servidor al conectarse
-                        out.value?.println("$username se ha conectado")
+                // Envía el nombre de usuario al servidor al conectarse
+                out.value?.println("$username se ha conectado")
 
-                        // Recibir mensajes del servidor
-                        while (socketConnection.isConnected) {
-                            val message = input.value?.readLine()
-                            if (message != null) {
-                                withContext(Dispatchers.Main) {
-                                    messageList.add(message)
-                                }
-                            }
-                        }
-                    } catch (e: IOException) {
+                // Recibir mensajes del servidor
+                while (socketConnection.isConnected) {
+                    val message = input.value?.readLine()
+                    if (message != null) {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Error al conectar con el servidor: ${e.message}", Toast.LENGTH_LONG).show()
+                            messageList.add(message)
                         }
                     }
                 }
-            }
-
-            // Cerrar conexión al salir de la pantalla
-            DisposableEffect(Unit) {
-                onDispose {
-                    coroutineScope.launch(Dispatchers.IO) {
-                        try {
-                            out.value?.println("$username se ha desconectado")
-                            input.value?.close()
-                            out.value?.close()
-                            socket.value?.close()
-                        } catch (e: IOException) {
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(context, "Error al cerrar conexión: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Interfaz de usuario
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(primaryBackgroundColor)
-                    .padding(16.dp)
-            ) {
-                // Botón de retroceso y título
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = { navController.popBackStack() }) {
-                        Text("Etxera", color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Txateatu", color = Color.White, fontSize = 20.sp)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Lista de mensajes
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    items(messageList) { message ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Text(text = message, color = Color.White)
-                        }
-                    }
-                }
-
-                // Campo para escribir un nuevo mensaje
-                OutlinedTextField(
-                    value = newMessage.value,
-                    onValueChange = { newMessage.value = it },
-                    label = { Text("Idatzi zure mezua", color = Color.White) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    textStyle = LocalTextStyle.current.copy(color = Color.White),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        cursorColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White,
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Botón para enviar mensaje
-                Button(
-                    onClick = {
-                        val message = newMessage.value.text
-                        if (message.isNotEmpty()) {
-                            coroutineScope.launch(Dispatchers.IO) {
-                                try {
-                                    val formattedMessage = "$username: $message"
-                                    out.value?.println(formattedMessage)
-                                    withContext(Dispatchers.Main) {
-                                        messageList.add("Tú: $message")
-                                        newMessage.value = TextFieldValue("") // Limpiar campo
-                                    }
-                                } catch (e: IOException) {
-                                    withContext(Dispatchers.Main) {
-                                        Toast.makeText(context, "Error al enviar el mensaje: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-                        } else {
-                            Toast.makeText(context, "No puedes enviar un mensaje vacío", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ) {
-                    Text(text = "Bidali", color = Color.White)
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error al conectar con el servidor: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
+    }
+
+    // Cerrar conexión al salir de la pantalla
+    DisposableEffect(Unit) {
+        onDispose {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    out.value?.println("$username se ha desconectado")
+                    input.value?.close()
+                    out.value?.close()
+                    socket.value?.close()
+                } catch (e: IOException) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error al cerrar conexión: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    // Interfaz de usuario
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(primaryBackgroundColor)
+            .padding(16.dp)
+    ) {
+        // Botón de retroceso y título
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = { navController.popBackStack() }) {
+                Text("Etxera", color = Color.White)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Txateatu", color = Color.White, fontSize = 20.sp)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Lista de mensajes
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            items(messageList) { message ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text(text = message, color = Color.White)
+                }
+            }
+        }
+
+        // Campo para escribir un nuevo mensaje
+        OutlinedTextField(
+            value = newMessage.value,
+            onValueChange = { newMessage.value = it },
+            label = { Text("Idatzi zure mezua", color = Color.White) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            textStyle = LocalTextStyle.current.copy(color = Color.White),
+            colors = OutlinedTextFieldDefaults.colors(
+                cursorColor = Color.White,
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.White,
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Botón para enviar mensaje
+        Button(
+            onClick = {
+                val message = newMessage.value.text
+                if (message.isNotEmpty()) {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        try {
+                            val formattedMessage = "$username: $message"
+                            out.value?.println(formattedMessage)
+                            withContext(Dispatchers.Main) {
+                                messageList.add("Tú: $message")
+                                newMessage.value = TextFieldValue("") // Limpiar campo
+                            }
+                        } catch (e: IOException) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Error al enviar el mensaje: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "No puedes enviar un mensaje vacío", Toast.LENGTH_SHORT).show()
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666E6C)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text(text = "Bidali", color = Color.White)
+        }
+    }
+}
 
 
 @Preview(showBackground = true )
@@ -1393,7 +1460,7 @@ fun PreviewLoginScreen() {
 @Composable
 fun PreviewHomeScreen() {
     HomeScreen(navController = rememberNavController(),
-    username = ""
+        username = ""
     )
 }
 
@@ -1449,5 +1516,3 @@ fun PreviewTxatScreen() {
     val navController = rememberNavController()
     TxatScreen(navController = navController, username = "PreviewUser")
 }
-
-
